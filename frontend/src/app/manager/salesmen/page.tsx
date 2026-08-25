@@ -134,11 +134,11 @@ export default function ManagerSalesmen() {
             <p className="mt-1 text-xs text-slate-400">Aging accounts receivable balance</p>
           </div>
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Stock SKUs Assigned</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Stock Items Assigned</p>
             <h3 className="mt-2 text-2xl font-black text-indigo-600">
               {stock.reduce((acc, item) => acc + item.quantity, 0)} units
             </h3>
-            <p className="mt-1 text-xs text-slate-400">Across {stock.length} unique product SKUs</p>
+            <p className="mt-1 text-xs text-slate-400">Across {stock.length} unique product items</p>
           </div>
         </div>
 
@@ -154,7 +154,6 @@ export default function ManagerSalesmen() {
                 <thead>
                   <tr className="border-b border-slate-200 text-xs font-bold uppercase text-slate-400">
                     <th className="pb-2">Product</th>
-                    <th className="pb-2">SKU</th>
                     <th className="pb-2 text-right">Available Qty</th>
                   </tr>
                 </thead>
@@ -162,7 +161,6 @@ export default function ManagerSalesmen() {
                   {stock.map((item) => (
                     <tr key={item._id} className="hover:bg-slate-50/50">
                       <td className="py-2.5 font-bold text-slate-800">{item.productId?.name || 'Deleted Product'}</td>
-                      <td className="py-2.5 font-mono text-xs">{item.productId?.sku || '-'}</td>
                       <td className="py-2.5 text-right font-extrabold text-slate-900">
                         {item.quantity} {item.productId?.unit || 'pcs'}
                       </td>
@@ -170,7 +168,7 @@ export default function ManagerSalesmen() {
                   ))}
                   {stock.length === 0 && (
                     <tr>
-                      <td colSpan={3} className="py-4 text-center text-slate-400 text-xs">No stock currently assigned</td>
+                      <td colSpan={2} className="py-4 text-center text-slate-400 text-xs">No stock currently assigned</td>
                     </tr>
                   )}
                 </tbody>

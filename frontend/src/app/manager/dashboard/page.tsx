@@ -268,7 +268,6 @@ export default function ManagerDashboard() {
                 <div key={item._id} className="py-3 flex items-center justify-between">
                   <div>
                     <p className="text-sm font-bold text-slate-800">{item.name}</p>
-                    <p className="text-xs text-slate-400">SKU: {item.sku}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-xs font-bold text-rose-600">Stock: {item.mainStock} {item.unit}</p>

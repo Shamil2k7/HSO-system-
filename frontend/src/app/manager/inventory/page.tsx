@@ -17,7 +17,7 @@ import {
 interface SalesmanStockData {
   _id: string;
   salesmanId: { _id: string; name: string; email: string } | null;
-  productId: { _id: string; name: string; sku: string; category: string; unit: string; minStockLevel: number; status: string } | null;
+  productId: { _id: string; name: string; category: string; unit: string; minStockLevel: number; status: string } | null;
   quantity: number;
   updatedAt: string;
 }
@@ -131,8 +131,8 @@ export default function ManagerInventory() {
       {/* Main Stock Summary Grid */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Catalog SKU Count</p>
-          <h3 className="mt-2 text-2xl font-black text-slate-900">{productsList.length} SKUs</h3>
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Catalog Product Count</p>
+          <h3 className="mt-2 text-2xl font-black text-slate-900">{productsList.length} items</h3>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Total Allocated Stock</p>
@@ -161,7 +161,6 @@ export default function ManagerInventory() {
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50/55 text-xs font-bold uppercase text-slate-400">
                   <th className="px-6 py-3.5">Salesman</th>
-                  <th className="px-6 py-3.5">SKU</th>
                   <th className="px-6 py-3.5">Product Name</th>
                   <th className="px-6 py-3.5">Category</th>
                   <th className="px-6 py-3.5">Allocated Balance</th>
@@ -176,7 +175,6 @@ export default function ManagerInventory() {
                   return (
                     <tr key={s._id} className="hover:bg-slate-50/30">
                       <td className="px-6 py-4 font-bold text-slate-800">{s.salesmanId?.name || 'Unknown Salesman'}</td>
-                      <td className="px-6 py-4 font-mono font-bold text-slate-600">{s.productId?.sku || '-'}</td>
                       <td className="px-6 py-4 font-bold text-slate-800">{s.productId?.name || 'Deleted Product'}</td>
                       <td className="px-6 py-4">{s.productId?.category || '-'}</td>
                       <td className={`px-6 py-4 font-extrabold ${isLow ? 'text-rose-600' : 'text-slate-900'}`}>
@@ -262,7 +260,7 @@ export default function ManagerInventory() {
                 >
                   {productsList.map((p) => (
                     <option key={p._id} value={p._id}>
-                      {p.name} (SKU: {p.sku})
+                      {p.name}
                     </option>
                   ))}
                   {productsList.length === 0 && <option value="">No active products</option>}

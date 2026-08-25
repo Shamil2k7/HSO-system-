@@ -24,7 +24,6 @@ interface Salesman {
 interface Product {
   _id: string;
   name: string;
-  sku: string;
   unit: string;
 }
 
@@ -38,7 +37,7 @@ interface SalesmanStock {
 interface TransferRecord {
   _id: string;
   transferId: string;
-  productId: { name: string; sku: string; unit: string } | null;
+  productId: { name: string; unit: string } | null;
   quantity: number;
   from: string;
   to: string;
@@ -246,7 +245,7 @@ export default function ManagerStockTransfer() {
                 >
                   {products.map((p) => (
                     <option key={p._id} value={p._id}>
-                      {p.name} (SKU: {p.sku})
+                      {p.name}
                     </option>
                   ))}
                   {products.length === 0 && <option value="">No products available</option>}
@@ -324,7 +323,6 @@ export default function ManagerStockTransfer() {
                         <div className="font-bold text-slate-800">
                           {t.productId ? t.productId.name : 'Unknown Product'}
                         </div>
-                        {t.productId && <div className="text-[10px] text-slate-400 font-normal">SKU: {t.productId.sku}</div>}
                       </td>
                       <td className="py-3.5 font-extrabold text-slate-900">
                         {t.quantity} {t.productId?.unit || 'pcs'}

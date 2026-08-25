@@ -86,7 +86,7 @@ export default function ManagerProducts() {
     setEditingProduct(null);
     reset({
       name: '',
-      category: '',
+      category: 'Food',
       unit: 'pcs',
       sellingPrice: 0,
       minStockLevel: 10,
@@ -319,15 +319,14 @@ export default function ManagerProducts() {
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
                     Category
                   </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Shirt"
+                  <select
                     {...register('category')}
-                    className="mt-1 block w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                  {errors.category && (
-                    <p className="mt-1 text-xs font-semibold text-rose-500">{errors.category.message}</p>
-                  )}
+                    className="mt-1 block w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="Food">Food</option>
+                    <option value="Cleaning">Cleaning</option>
+                    <option value="Beauty">Beauty</option>
+                  </select>
                 </div>
 
                 <div>
