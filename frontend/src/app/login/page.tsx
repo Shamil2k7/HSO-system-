@@ -9,7 +9,7 @@ import { useToast } from '../../context/ToastContext';
 import { TrendingUp, Lock, Mail, Loader2, KeyRound } from 'lucide-react';
 
 const loginSchema = z.object({
-  email: z.string().email('Please enter a valid email address'),
+  mobile: z.string().min(1, 'Please enter your mobile number'),
   password: z.string().min(6, 'Password must be at least 6 characters long'),
 });
 
@@ -32,17 +32,17 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormValues) => {
     setLoading(true);
     try {
-      await login(data.email, data.password);
+      await login(data.mobile, data.password);
       showToast('Logged in successfully!', 'success');
     } catch (error: any) {
-      showToast(error.message || 'Invalid email or password', 'error');
+      showToast(error.message || 'Invalid credentials', 'error');
     } finally {
       setLoading(false);
     }
   };
 
-  const fillCredentials = (email: string) => {
-    setValue('email', email);
+  const fillCredentials = (mobile: string) => {
+    setValue('mobile', mobile);
     setValue('password', 'password123');
   };
 
@@ -64,25 +64,25 @@ export default function LoginPage() {
         <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
           <div className="space-y-4 rounded-md">
             <div>
-              <label htmlFor="email" className="block text-sm font-semibold text-slate-300">
-                Email Address
+              <label htmlFor="mobile" className="block text-sm font-semibold text-slate-300">
+                Mobile Number
               </label>
               <div className="relative mt-1">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                   <Mail className="h-5 w-5 text-slate-500" />
                 </div>
                 <input
-                  id="email"
-                  type="email"
-                  placeholder="name@company.com"
-                  {...register('email')}
+                  id="mobile"
+                  type="text"
+                  placeholder="e.g. 9999999999"
+                  {...register('mobile')}
                   className={`block w-full rounded-xl border bg-slate-700/50 pl-10 pr-3 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm ${
-                    errors.email ? 'border-rose-500' : 'border-slate-600'
+                    errors.mobile ? 'border-rose-500' : 'border-slate-600'
                   }`}
                 />
               </div>
-              {errors.email && (
-                <p className="mt-1 text-xs font-semibold text-rose-400">{errors.email.message}</p>
+              {errors.mobile && (
+                <p className="mt-1 text-xs font-semibold text-rose-400">{errors.mobile.message}</p>
               )}
             </div>
 
@@ -133,19 +133,19 @@ export default function LoginPage() {
           </div>
           <div className="grid grid-cols-3 gap-2">
             <button
-              onClick={() => fillCredentials('admin@erp.com')}
+              onClick={() => fillCredentials('9999999999')}
               className="rounded-lg bg-slate-800/80 px-2 py-1.5 text-xs font-semibold text-slate-300 border border-slate-700 hover:border-indigo-500 hover:text-white transition-all text-center"
             >
               Admin
             </button>
             <button
-              onClick={() => fillCredentials('manager@erp.com')}
+              onClick={() => fillCredentials('8888888888')}
               className="rounded-lg bg-slate-800/80 px-2 py-1.5 text-xs font-semibold text-slate-300 border border-slate-700 hover:border-indigo-500 hover:text-white transition-all text-center"
             >
               CLC
             </button>
             <button
-              onClick={() => fillCredentials('rahul@erp.com')}
+              onClick={() => fillCredentials('7777777777')}
               className="rounded-lg bg-slate-800/80 px-2 py-1.5 text-xs font-semibold text-slate-300 border border-slate-700 hover:border-indigo-500 hover:text-white transition-all text-center"
             >
               HOS

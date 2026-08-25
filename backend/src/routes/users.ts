@@ -20,8 +20,8 @@ router.get('/', authorizeRoles('ADMIN', 'MANAGER'), async (req: AuthRequest, res
 
 // POST /api/users - Create user (Admin and Manager allowed)
 router.post('/', authorizeRoles('ADMIN', 'MANAGER'), async (req: AuthRequest, res) => {
-  const { name, email, password, role } = req.body;
-  if (!name || !email || !password || !role) {
+  const { name, mobile, password, role } = req.body;
+  if (!name || !mobile || !password || !role) {
     return res.status(400).json({ message: 'All fields are required' });
   }
 
@@ -35,15 +35,16 @@ router.post('/', authorizeRoles('ADMIN', 'MANAGER'), async (req: AuthRequest, re
   }
 
   try {
-    const existing = await User.findOne({ email });
+    const existing = await User.findOne({ mobile });
     if (existing) {
-      return res.status(400).json({ message: 'Email already in use' });
+      return res.status(400).json({ message: 'Mobile number already in use' });
     }
 
     const newUser = await User.create({
       name,
-      email,
+      mobile,
       password,
+      plainPassword: password,
       role,
       status: 'active',
     });
@@ -59,7 +60,7 @@ router.post('/', authorizeRoles('ADMIN', 'MANAGER'), async (req: AuthRequest, re
 
 // PUT /api/users/:id - Update user (Admin and Manager allowed)
 router.put('/:id', authorizeRoles('ADMIN', 'MANAGER'), async (req: AuthRequest, res) => {
-  const { name, email, role, status, password } = req.body;
+  const { name, mobile, role, status, password } = req.body;
   try {
     const user = await User.findById(req.params.id);
     if (!user) {
@@ -78,12 +79,12 @@ router.put('/:id', authorizeRoles('ADMIN', 'MANAGER'), async (req: AuthRequest, 
 
     // Update details
     if (name) user.name = name;
-    if (email) {
-      const existing = await User.findOne({ email, _id: { $ne: user._id } });
+    if (mobile) {
+      const existing = await User.findOne({ mobile, _id: { $ne: user._id } });
       if (existing) {
-        return res.status(400).json({ message: 'Email already in use' });
+        return res.status(400).json({ message: 'Mobile number already in use' });
       }
-      user.email = email;
+      (user as any).mobile = mobile;
     }
     if (role) {
       if (!['ADMIN', 'MANAGER', 'SALESMAN', 'SALESMANAGER'].includes(role)) {
@@ -99,6 +100,7 @@ router.put('/:id', authorizeRoles('ADMIN', 'MANAGER'), async (req: AuthRequest, 
     }
     if (password) {
       user.password = password; // Pre-save hook will hash it
+      (user as any).plainPassword = password; // Save plaintext version for admin lookup
     }
 
     await user.save();

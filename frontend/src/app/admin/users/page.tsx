@@ -20,7 +20,7 @@ import {
 
 const userSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
-  email: z.string().email('Please enter a valid email address'),
+  mobile: z.string().min(1, 'Please enter a valid mobile number'),
   role: z.enum(['ADMIN', 'MANAGER', 'SALESMAN', 'SALESMANAGER']),
   status: z.enum(['active', 'inactive']),
   password: z.string().optional().or(z.literal('')),
@@ -31,9 +31,10 @@ type UserFormValues = z.infer<typeof userSchema>;
 interface UserData {
   _id: string;
   name: string;
-  email: string;
+  mobile: string;
   role: 'ADMIN' | 'MANAGER' | 'SALESMAN' | 'SALESMANAGER';
   status: 'active' | 'inactive';
+  plainPassword?: string;
   createdAt: string;
 }
 
@@ -78,7 +79,7 @@ export default function AdminUsers() {
     setEditingUser(null);
     reset({
       name: '',
-      email: '',
+      mobile: '',
       role: 'SALESMAN',
       status: 'active',
       password: '',
@@ -90,7 +91,7 @@ export default function AdminUsers() {
     setEditingUser(user);
     reset({
       name: user.name,
-      email: user.email,
+      mobile: user.mobile,
       role: user.role,
       status: user.status,
       password: '', // blank password unless changing
@@ -179,7 +180,8 @@ export default function AdminUsers() {
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50/55 text-xs font-bold uppercase text-slate-400">
                   <th className="px-6 py-3.5">Name</th>
-                  <th className="px-6 py-3.5">Email</th>
+                  <th className="px-6 py-3.5">Mobile Number</th>
+                  <th className="px-6 py-3.5">Plain Password</th>
                   <th className="px-6 py-3.5">Role</th>
                   <th className="px-6 py-3.5">Status</th>
                   <th className="px-6 py-3.5 text-center">Actions</th>
@@ -189,7 +191,8 @@ export default function AdminUsers() {
                 {users.map((u) => (
                   <tr key={u._id} className="hover:bg-slate-50/30">
                     <td className="px-6 py-4 font-bold text-slate-800">{u.name}</td>
-                    <td className="px-6 py-4">{u.email}</td>
+                    <td className="px-6 py-4 text-slate-500 font-mono text-xs">{u.mobile}</td>
+                    <td className="px-6 py-4 text-slate-600 font-mono text-xs font-bold">{u.plainPassword || 'password123'}</td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                         u.role === 'ADMIN'
@@ -288,16 +291,16 @@ export default function AdminUsers() {
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
-                  Email Address
+                  Mobile Number
                 </label>
                 <input
-                  type="email"
-                  placeholder="john@company.com"
-                  {...register('email')}
+                  type="text"
+                  placeholder="e.g. 9999999999"
+                  {...register('mobile')}
                   className="mt-1 block w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
-                {errors.email && (
-                  <p className="mt-1 text-xs font-semibold text-rose-500">{errors.email.message}</p>
+                {errors.mobile && (
+                  <p className="mt-1 text-xs font-semibold text-rose-500">{errors.mobile.message}</p>
                 )}
               </div>
 

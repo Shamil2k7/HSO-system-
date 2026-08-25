@@ -6,7 +6,7 @@ export interface AuthRequest extends Request {
   user?: {
     id: string;
     name: string;
-    email: string;
+    mobile: string;
     role: 'ADMIN' | 'MANAGER' | 'SALESMAN' | 'SALESMANAGER';
     status: string;
   };
@@ -23,7 +23,7 @@ export const authenticateJWT = async (req: AuthRequest, res: Response, next: Nex
     const secret = process.env.JWT_SECRET || 'super_secret_jwt_key_12345';
     const decoded = jwt.verify(token, secret) as any;
     
-    const userObj = await User.findById(decoded.id).select('status role name email');
+    const userObj = await User.findById(decoded.id).select('status role name mobile');
     if (!userObj) {
       return res.status(401).json({ message: 'User no longer exists' });
     }
@@ -35,7 +35,7 @@ export const authenticateJWT = async (req: AuthRequest, res: Response, next: Nex
     req.user = {
       id: userObj._id.toString(),
       name: userObj.name,
-      email: userObj.email,
+      mobile: (userObj as any).mobile,
       role: userObj.role as any,
       status: userObj.status,
     };

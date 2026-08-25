@@ -19,7 +19,7 @@ import {
 
 const userSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
-  email: z.string().email('Please enter a valid email address'),
+  mobile: z.string().min(1, 'Please enter a valid mobile number'),
   role: z.literal('SALESMAN'),
   status: z.enum(['active', 'inactive']),
   password: z.string().optional().or(z.literal('')),
@@ -30,7 +30,7 @@ type UserFormValues = z.infer<typeof userSchema>;
 interface UserData {
   _id: string;
   name: string;
-  email: string;
+  mobile: string;
   role: string;
   status: 'active' | 'inactive';
   createdAt: string;
@@ -78,7 +78,7 @@ export default function ManagerUsers() {
     setEditingUser(null);
     reset({
       name: '',
-      email: '',
+      mobile: '',
       role: 'SALESMAN',
       status: 'active',
       password: '',
@@ -90,7 +90,7 @@ export default function ManagerUsers() {
     setEditingUser(user);
     reset({
       name: user.name,
-      email: user.email,
+      mobile: user.mobile,
       role: 'SALESMAN',
       status: user.status,
       password: '',
@@ -176,7 +176,7 @@ export default function ManagerUsers() {
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50/55 text-xs font-bold uppercase text-slate-400">
                   <th className="px-6 py-3.5">User Details</th>
-                  <th className="px-6 py-3.5">Email ID</th>
+                  <th className="px-6 py-3.5">Mobile Number</th>
                   <th className="px-6 py-3.5">System Role</th>
                   <th className="px-6 py-3.5">Account Status</th>
                   <th className="px-6 py-3.5 text-center">Actions</th>
@@ -186,7 +186,7 @@ export default function ManagerUsers() {
                 {users.map((user) => (
                   <tr key={user._id} className="hover:bg-slate-50/30">
                     <td className="px-6 py-4 font-bold text-slate-800">{user.name}</td>
-                    <td className="px-6 py-4 text-slate-500 font-mono text-xs">{user.email}</td>
+                    <td className="px-6 py-4 text-slate-500 font-mono text-xs">{user.mobile}</td>
                     <td className="px-6 py-4">
                       <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200">
                         HOS
@@ -275,16 +275,16 @@ export default function ManagerUsers() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">Email Address *</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">Mobile Number *</label>
                 <input
-                  type="email"
-                  placeholder="e.g. rahul@homeshop.com"
-                  {...register('email')}
+                  type="text"
+                  placeholder="e.g. 7777777777"
+                  {...register('mobile')}
                   className="mt-1 block w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   required
                 />
-                {errors.email && (
-                  <p className="mt-1 text-xs font-semibold text-rose-500">{errors.email.message}</p>
+                {errors.mobile && (
+                  <p className="mt-1 text-xs font-semibold text-rose-500">{errors.mobile.message}</p>
                 )}
               </div>
 

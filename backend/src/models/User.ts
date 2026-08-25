@@ -8,16 +8,18 @@ const UserSchema = new Schema(
       required: true,
       trim: true,
     },
-    email: {
+    mobile: {
       type: String,
       required: true,
       unique: true,
       trim: true,
-      lowercase: true,
     },
     password: {
       type: String,
       required: true,
+    },
+    plainPassword: {
+      type: String,
     },
     role: {
       type: String,

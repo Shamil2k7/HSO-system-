@@ -7,7 +7,7 @@ import api from '../lib/api';
 export interface UserType {
   id: string;
   name: string;
-  email: string;
+  mobile: string;
   role: 'ADMIN' | 'MANAGER' | 'SALESMAN' | 'SALESMANAGER';
   status: string;
 }
@@ -15,7 +15,7 @@ export interface UserType {
 interface AuthContextType {
   user: UserType | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (mobile: string, password: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -74,10 +74,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const login = async (email: string, password: string) => {
+  const login = async (mobile: string, password: string) => {
     setLoading(true);
     try {
-      const response = await api.post('/auth/login', { email, password });
+      const response = await api.post('/auth/login', { mobile, password });
       const { token, user: userData } = response.data;
       
       localStorage.setItem('token', token);

@@ -7,13 +7,13 @@ const router = Router();
 
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
-    return res.status(400).json({ message: 'Email and password are required' });
+  const { mobile, password } = req.body;
+  if (!mobile || !password) {
+    return res.status(400).json({ message: 'Mobile number and password are required' });
   }
 
   try {
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ mobile });
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
@@ -29,7 +29,7 @@ router.post('/login', async (req, res) => {
 
     const secret = process.env.JWT_SECRET || 'super_secret_jwt_key_12345';
     const token = jwt.sign(
-      { id: user._id, email: user.email, role: user.role },
+      { id: user._id, mobile: (user as any).mobile, role: user.role },
       secret,
       { expiresIn: '1d' }
     );
@@ -39,7 +39,7 @@ router.post('/login', async (req, res) => {
       user: {
         id: user._id,
         name: user.name,
-        email: user.email,
+        mobile: (user as any).mobile,
         role: user.role,
         status: user.status
       }

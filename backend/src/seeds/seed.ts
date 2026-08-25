@@ -31,53 +31,59 @@ async function seed() {
     // 1. Create Users
     const admin = await User.create({
       name: 'System Admin',
-      email: 'admin@erp.com',
+      mobile: '9999999999',
       password: 'password123',
+      plainPassword: 'password123',
       role: 'ADMIN',
       status: 'active',
     });
 
     const manager = await User.create({
       name: 'John Manager',
-      email: 'manager@erp.com',
+      mobile: '8888888888',
       password: 'password123',
+      plainPassword: 'password123',
       role: 'MANAGER',
       status: 'active',
     });
 
     const rahul = await User.create({
       name: 'Rahul',
-      email: 'rahul@erp.com',
+      mobile: '7777777777',
       password: 'password123',
+      plainPassword: 'password123',
       role: 'SALESMAN',
       status: 'active',
     });
 
     const akhil = await User.create({
       name: 'Akhil',
-      email: 'akhil@erp.com',
+      mobile: '6666666666',
       password: 'password123',
+      plainPassword: 'password123',
       role: 'SALESMAN',
       status: 'active',
     });
 
     const niyas = await User.create({
       name: 'Niyas',
-      email: 'niyas@erp.com',
+      mobile: '5555555555',
       password: 'password123',
+      plainPassword: 'password123',
       role: 'SALESMAN',
       status: 'active',
     });
 
     const salesManager = await User.create({
       name: 'Sarah Sales Manager',
-      email: 'salesmanager@erp.com',
+      mobile: '4444444444',
       password: 'password123',
+      plainPassword: 'password123',
       role: 'SALESMANAGER',
       status: 'active',
     });
 
-    console.log('Seeded users: Admin, Manager, Salesmen (Rahul, Akhil, Niyas), Sales Manager.');
+    console.log('Seeded users with mobile numbers: Admin, CLC (Manager), HOS (Rahul, Akhil, Niyas), Sales Manager.');
 
     // 2. Create Company Products (no mainStock)
     const shirt = await Product.create({
