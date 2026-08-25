@@ -117,14 +117,14 @@ export default function ManagerInventory() {
       {/* Header Panel */}
       <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900">Salesmen Inventory</h2>
-          <p className="text-sm text-slate-500">Track and replenish stock assigned directly to salesmen's personal allocation</p>
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900">HOS Inventory</h2>
+          <p className="text-sm text-slate-500">Track and replenish stock assigned directly to HOS (salesman) personal allocation</p>
         </div>
         <button
           onClick={() => openAddStockModal('', '')}
           className="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-500 shadow-md shadow-indigo-600/20 transition-all"
         >
-          <Plus className="mr-1.5 h-5 w-5" /> Replenish Salesman Stock
+          <Plus className="mr-1.5 h-5 w-5" /> Replenish HOS Stock
         </button>
       </div>
 
@@ -160,7 +160,7 @@ export default function ManagerInventory() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50/55 text-xs font-bold uppercase text-slate-400">
-                  <th className="px-6 py-3.5">Salesman</th>
+                  <th className="px-6 py-3.5">HOS User</th>
                   <th className="px-6 py-3.5">Product Name</th>
                   <th className="px-6 py-3.5">Category</th>
                   <th className="px-6 py-3.5">Allocated Balance</th>
@@ -174,7 +174,7 @@ export default function ManagerInventory() {
                   const isLow = s.productId && s.productId.status === 'active' && s.quantity <= s.productId.minStockLevel;
                   return (
                     <tr key={s._id} className="hover:bg-slate-50/30">
-                      <td className="px-6 py-4 font-bold text-slate-800">{s.salesmanId?.name || 'Unknown Salesman'}</td>
+                      <td className="px-6 py-4 font-bold text-slate-800">{s.salesmanId?.name || 'Unknown HOS'}</td>
                       <td className="px-6 py-4 font-bold text-slate-800">{s.productId?.name || 'Deleted Product'}</td>
                       <td className="px-6 py-4">{s.productId?.category || '-'}</td>
                       <td className={`px-6 py-4 font-extrabold ${isLow ? 'text-rose-600' : 'text-slate-900'}`}>
@@ -219,7 +219,7 @@ export default function ManagerInventory() {
             {/* Modal Header */}
             <div className="flex items-center justify-between pb-4 border-b border-slate-100">
               <h3 className="text-lg font-bold text-slate-900 flex items-center">
-                <Boxes className="mr-2 h-5 w-5 text-indigo-600" /> Replenish Salesman Stock
+                <Boxes className="mr-2 h-5 w-5 text-indigo-600" /> Replenish HOS Stock
               </h3>
               <button
                 onClick={() => setModalOpen(false)}
@@ -233,7 +233,7 @@ export default function ManagerInventory() {
             <form onSubmit={handleAddStockSubmit} className="mt-4 space-y-4">
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
-                  Select Salesman
+                  Select HOS User
                 </label>
                 <select
                   value={selectedSalesmanId}
@@ -245,7 +245,7 @@ export default function ManagerInventory() {
                       {s.name} ({s.email})
                     </option>
                   ))}
-                  {salesmen.length === 0 && <option value="">No active salesmen</option>}
+                  {salesmen.length === 0 && <option value="">No active HOS users</option>}
                 </select>
               </div>
 

@@ -43,7 +43,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
           { name: 'Manage Users', href: '/admin/users', icon: Users },
           { name: 'Products Catalog', href: '/admin/products', icon: ShoppingBag },
-          { name: 'Salesmen Inventory', href: '/admin/inventory', icon: Boxes },
+          { name: 'HOS Inventory', href: '/admin/inventory', icon: Boxes },
           { name: 'Sales Invoices', href: '/admin/sales', icon: DollarSign },
           { name: 'Payments', href: '/admin/payments', icon: CreditCard },
           { name: 'Reports', href: '/admin/reports', icon: TrendingUp },
@@ -51,16 +51,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       case 'MANAGER':
         return [
           { name: 'Dashboard', href: '/manager/dashboard', icon: LayoutDashboard },
+          { name: 'HOS Management', href: '/manager/users', icon: Users },
           { name: 'Products Catalog', href: '/manager/products', icon: ShoppingBag },
-          { name: 'Salesmen Inventory', href: '/manager/inventory', icon: Boxes },
+          { name: 'HOS Inventory', href: '/manager/inventory', icon: Boxes },
           { name: 'Stock Transfer', href: '/manager/stock-transfer', icon: Truck },
-          { name: 'Salesmen Performance', href: '/manager/salesmen', icon: Users },
+          { name: 'HOS Performance', href: '/manager/salesmen', icon: Users },
           { name: 'Business Reports', href: '/manager/reports', icon: TrendingUp },
         ];
       case 'SALESMANAGER':
         return [
           { name: 'Dashboard', href: '/manager/dashboard', icon: LayoutDashboard },
-          { name: 'Salesmen Performance', href: '/manager/salesmen', icon: Users },
+          { name: 'HOS Performance', href: '/manager/salesmen', icon: Users },
           { name: 'Sales Invoices', href: '/manager/sales', icon: DollarSign },
           { name: 'Payments', href: '/manager/payments', icon: CreditCard },
           { name: 'Business Reports', href: '/manager/reports', icon: TrendingUp },
@@ -118,7 +119,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-sm">
               <TrendingUp className="h-5 w-5" />
             </div>
-            <span className="text-lg font-bold text-slate-900 tracking-tight">HSO Sales ERP</span>
+            <span className="text-lg font-bold text-slate-900 tracking-tight">Home Shop</span>
           </div>
           <button
             onClick={() => setSidebarOpen(false)}
@@ -141,7 +142,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
           <div className="mt-4 flex items-center justify-between">
             <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${getRoleBadgeColor()}`}>
-              {user.role}
+              {user.role === 'MANAGER' ? 'CLC' : user.role === 'SALESMAN' ? 'HOS' : user.role}
             </span>
           </div>
         </div>

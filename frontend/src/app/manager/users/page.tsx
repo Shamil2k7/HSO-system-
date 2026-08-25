@@ -13,7 +13,6 @@ import {
   Trash2,
   X,
   Loader2,
-  ShieldCheck,
   User,
   Power,
 } from 'lucide-react';
@@ -21,7 +20,7 @@ import {
 const userSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Please enter a valid email address'),
-  role: z.enum(['ADMIN', 'MANAGER', 'SALESMAN', 'SALESMANAGER']),
+  role: z.literal('SALESMAN'),
   status: z.enum(['active', 'inactive']),
   password: z.string().optional().or(z.literal('')),
 });
@@ -32,12 +31,12 @@ interface UserData {
   _id: string;
   name: string;
   email: string;
-  role: 'ADMIN' | 'MANAGER' | 'SALESMAN' | 'SALESMANAGER';
+  role: string;
   status: 'active' | 'inactive';
   createdAt: string;
 }
 
-export default function AdminUsers() {
+export default function ManagerUsers() {
   const { showToast } = useToast();
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,7 +48,6 @@ export default function AdminUsers() {
     register,
     handleSubmit,
     reset,
-    setValue,
     formState: { errors },
   } = useForm<UserFormValues>({
     resolver: zodResolver(userSchema),
@@ -62,9 +60,11 @@ export default function AdminUsers() {
   const fetchUsers = async () => {
     try {
       const response = await api.get('/users');
-      setUsers(response.data);
+      // Managers can only view/manage HOS users (role === SALESMAN)
+      const salesmenOnly = response.data.filter((u: any) => u.role === 'SALESMAN');
+      setUsers(salesmenOnly);
     } catch (error) {
-      showToast('Failed to load user list.', 'error');
+      showToast('Failed to load HOS user list.', 'error');
     } finally {
       setLoading(false);
     }
@@ -91,38 +91,35 @@ export default function AdminUsers() {
     reset({
       name: user.name,
       email: user.email,
-      role: user.role,
+      role: 'SALESMAN',
       status: user.status,
-      password: '', // blank password unless changing
+      password: '',
     });
     setModalOpen(true);
   };
 
   const onSubmit = async (data: UserFormValues) => {
-    // If creating, password is required
     if (!editingUser && !data.password) {
-      showToast('Password is required for new users', 'error');
+      showToast('Password is required for new HOS users', 'error');
       return;
     }
 
     setSubmitting(true);
     try {
       if (editingUser) {
-        // Edit flow
         const payload: any = { ...data };
-        if (!payload.password) delete payload.password; // don't send empty password
+        if (!payload.password) delete payload.password;
         
         await api.put(`/users/${editingUser._id}`, payload);
-        showToast('User profile updated successfully', 'success');
+        showToast('HOS user profile updated successfully', 'success');
       } else {
-        // Create flow
         await api.post('/users', data);
-        showToast('User created successfully', 'success');
+        showToast('HOS user created successfully', 'success');
       }
       setModalOpen(false);
       fetchUsers();
     } catch (error: any) {
-      showToast(error.response?.data?.message || 'Failed to save user.', 'error');
+      showToast(error.response?.data?.message || 'Failed to save HOS user.', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -132,21 +129,21 @@ export default function AdminUsers() {
     const nextStatus = user.status === 'active' ? 'inactive' : 'active';
     try {
       await api.put(`/users/${user._id}`, { status: nextStatus });
-      showToast(`User marked as ${nextStatus}`, 'success');
+      showToast(`HOS user marked as ${nextStatus}`, 'success');
       fetchUsers();
     } catch (error: any) {
       showToast(error.response?.data?.message || 'Failed to update user status.', 'error');
     }
   };
 
-  const deleteUser = async (id: string) => {
-    if (!confirm('Are you sure you want to permanently delete this user?')) return;
+  const handleDeleteUser = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this HOS user? This action is permanent.')) return;
     try {
       await api.delete(`/users/${id}`);
-      showToast('User deleted successfully', 'success');
+      showToast('HOS user deleted successfully', 'success');
       fetchUsers();
     } catch (error: any) {
-      showToast(error.response?.data?.message || 'Failed to delete user.', 'error');
+      showToast(error.response?.data?.message || 'Failed to delete HOS user.', 'error');
     }
   };
 
@@ -155,14 +152,14 @@ export default function AdminUsers() {
       {/* Header Panel */}
       <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900">User Management</h2>
-          <p className="text-sm text-slate-500">Create, edit, and manage login authorization for CLCs and HOSs</p>
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900 font-sans">HOS User Management</h2>
+          <p className="text-sm text-slate-500">Register and manage Home Shop HOS (Salesmen) profiles in the system</p>
         </div>
         <button
           onClick={openAddModal}
-          className="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-500 shadow-md shadow-indigo-600/20 transition-all"
+          className="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-500 shadow-md shadow-indigo-600/20 transition-all font-sans"
         >
-          <UserPlus className="mr-2 h-4 w-4" /> Add New User
+          <UserPlus className="mr-1.5 h-5 w-5" /> Add HOS User
         </button>
       </div>
 
@@ -170,7 +167,7 @@ export default function AdminUsers() {
       <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
         {loading ? (
           <div className="flex h-48 flex-col items-center justify-center">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent"></div>
+            <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
             <p className="mt-2 text-xs font-semibold text-slate-500">Loading user catalog...</p>
           </div>
         ) : (
@@ -178,62 +175,56 @@ export default function AdminUsers() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50/55 text-xs font-bold uppercase text-slate-400">
-                  <th className="px-6 py-3.5">Name</th>
-                  <th className="px-6 py-3.5">Email</th>
-                  <th className="px-6 py-3.5">Role</th>
-                  <th className="px-6 py-3.5">Status</th>
+                  <th className="px-6 py-3.5">User Details</th>
+                  <th className="px-6 py-3.5">Email ID</th>
+                  <th className="px-6 py-3.5">System Role</th>
+                  <th className="px-6 py-3.5">Account Status</th>
                   <th className="px-6 py-3.5 text-center">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-sm font-medium text-slate-700">
-                {users.map((u) => (
-                  <tr key={u._id} className="hover:bg-slate-50/30">
-                    <td className="px-6 py-4 font-bold text-slate-800">{u.name}</td>
-                    <td className="px-6 py-4">{u.email}</td>
+                {users.map((user) => (
+                  <tr key={user._id} className="hover:bg-slate-50/30">
+                    <td className="px-6 py-4 font-bold text-slate-800">{user.name}</td>
+                    <td className="px-6 py-4 text-slate-500 font-mono text-xs">{user.email}</td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                        u.role === 'ADMIN'
-                          ? 'bg-purple-50 text-purple-700 border border-purple-200'
-                          : u.role === 'MANAGER'
-                          ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                          : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                      }`}>
-                        {u.role === 'MANAGER' ? 'CLC' : u.role === 'SALESMAN' ? 'HOS' : u.role}
+                      <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200">
+                        HOS
                       </span>
                     </td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                        u.status === 'active'
+                        user.status === 'active'
                           ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                           : 'bg-rose-50 text-rose-700 border border-rose-200'
                       }`}>
-                        {u.status}
+                        {user.status}
                       </span>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-center space-x-2.5">
                         <button
-                          onClick={() => toggleStatus(u)}
-                          title={u.status === 'active' ? 'Deactivate Account' : 'Activate Account'}
-                          className={`rounded-lg p-1.5 border transition-all ${
-                            u.status === 'active'
-                              ? 'text-amber-600 bg-amber-50 border-amber-200 hover:bg-amber-100'
-                              : 'text-emerald-600 bg-emerald-50 border-emerald-200 hover:bg-emerald-100'
-                          }`}
-                        >
-                          <Power className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => openEditModal(u)}
-                          title="Edit Profile"
-                          className="rounded-lg p-1.5 text-slate-600 bg-slate-50 border border-slate-200 hover:bg-slate-100"
+                          onClick={() => openEditModal(user)}
+                          className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-indigo-600 transition-colors"
+                          title="Edit user details"
                         >
                           <Edit2 className="h-4 w-4" />
                         </button>
                         <button
-                          onClick={() => deleteUser(u._id)}
-                          title="Delete User"
-                          className="rounded-lg p-1.5 text-rose-600 bg-rose-50 border border-rose-200 hover:bg-rose-100"
+                          onClick={() => toggleStatus(user)}
+                          className={`rounded-lg p-1.5 transition-colors ${
+                            user.status === 'active'
+                              ? 'text-slate-400 hover:bg-slate-100 hover:text-rose-600'
+                              : 'text-slate-400 hover:bg-slate-100 hover:text-emerald-600'
+                          }`}
+                          title={user.status === 'active' ? 'Suspend user account' : 'Activate user account'}
+                        >
+                          <Power className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteUser(user._id)}
+                          className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-rose-600 transition-colors"
+                          title="Delete user account"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -243,7 +234,7 @@ export default function AdminUsers() {
                 ))}
                 {users.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-6 py-8 text-center text-slate-400 text-xs">No users registered in the system</td>
+                    <td colSpan={5} className="px-6 py-8 text-center text-slate-400 text-xs">No HOS profiles registered in system</td>
                   </tr>
                 )}
               </tbody>
@@ -252,14 +243,13 @@ export default function AdminUsers() {
         )}
       </div>
 
-      {/* Add / Edit User Modal */}
+      {/* Add/Edit Modal */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
-            {/* Modal Header */}
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-slate-200">
             <div className="flex items-center justify-between pb-4 border-b border-slate-100">
               <h3 className="text-lg font-bold text-slate-900">
-                {editingUser ? `Edit User: ${editingUser.name}` : 'Create New System User'}
+                {editingUser ? `Edit HOS: ${editingUser.name}` : 'Register New HOS User'}
               </h3>
               <button
                 onClick={() => setModalOpen(false)}
@@ -269,17 +259,15 @@ export default function AdminUsers() {
               </button>
             </div>
 
-            {/* Modal Form */}
             <form onSubmit={handleSubmit(onSubmit)} className="mt-4 space-y-4">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
-                  Full Name
-                </label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">Full Name *</label>
                 <input
                   type="text"
-                  placeholder="John Doe"
+                  placeholder="e.g. Rahul Kumar"
                   {...register('name')}
                   className="mt-1 block w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  required
                 />
                 {errors.name && (
                   <p className="mt-1 text-xs font-semibold text-rose-500">{errors.name.message}</p>
@@ -287,59 +275,22 @@ export default function AdminUsers() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
-                  Email Address
-                </label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">Email Address *</label>
                 <input
                   type="email"
-                  placeholder="john@company.com"
+                  placeholder="e.g. rahul@homeshop.com"
                   {...register('email')}
                   className="mt-1 block w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  required
                 />
                 {errors.email && (
                   <p className="mt-1 text-xs font-semibold text-rose-500">{errors.email.message}</p>
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
-                    System Role
-                  </label>
-                  <select
-                    {...register('role')}
-                    className="mt-1 block w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  >
-                    <option value="SALESMAN">HOS</option>
-                    <option value="MANAGER">CLC</option>
-                    <option value="SALESMANAGER">Sales Manager</option>
-                    <option value="ADMIN">Admin</option>
-                  </select>
-                  {errors.role && (
-                    <p className="mt-1 text-xs font-semibold text-rose-500">{errors.role.message}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
-                    Account Status
-                  </label>
-                  <select
-                    {...register('status')}
-                    className="mt-1 block w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  >
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                  </select>
-                  {errors.status && (
-                    <p className="mt-1 text-xs font-semibold text-rose-500">{errors.status.message}</p>
-                  )}
-                </div>
-              </div>
-
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
-                  Password {editingUser && <span className="text-slate-400 normal-case">(leave blank to keep current)</span>}
+                  {editingUser ? 'Password (Leave blank to keep unchanged)' : 'Account Password *'}
                 </label>
                 <input
                   type="password"
@@ -350,6 +301,17 @@ export default function AdminUsers() {
                 {errors.password && (
                   <p className="mt-1 text-xs font-semibold text-rose-500">{errors.password.message}</p>
                 )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">Account Status</label>
+                <select
+                  {...register('status')}
+                  className="mt-1 block w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
               </div>
 
               <div className="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">
@@ -366,7 +328,7 @@ export default function AdminUsers() {
                   className="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-500 disabled:opacity-50"
                 >
                   {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {editingUser ? 'Save Changes' : 'Create User'}
+                  Save User
                 </button>
               </div>
             </form>

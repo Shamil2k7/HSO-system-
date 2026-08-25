@@ -54,7 +54,7 @@ export default function LoginPage() {
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-lg">
             <TrendingUp className="h-6 w-6" />
           </div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-white tracking-tight">HSO Sales ERP</h2>
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-white tracking-tight">Home Shop</h2>
           <p className="mt-2 text-center text-sm text-slate-400">
             Sign in to manage inventory and sales pipeline
           </p>
@@ -142,13 +142,13 @@ export default function LoginPage() {
               onClick={() => fillCredentials('manager@erp.com')}
               className="rounded-lg bg-slate-800/80 px-2 py-1.5 text-xs font-semibold text-slate-300 border border-slate-700 hover:border-indigo-500 hover:text-white transition-all text-center"
             >
-              Manager
+              CLC
             </button>
             <button
               onClick={() => fillCredentials('rahul@erp.com')}
               className="rounded-lg bg-slate-800/80 px-2 py-1.5 text-xs font-semibold text-slate-300 border border-slate-700 hover:border-indigo-500 hover:text-white transition-all text-center"
             >
-              Salesman
+              HOS
             </button>
           </div>
           <p className="mt-3 text-[10px] text-center text-slate-500">

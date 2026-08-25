@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { User } from '../models/User';
-import { authenticateJWT, authorizeRoles } from '../middleware/auth';
+import { authenticateJWT, authorizeRoles, AuthRequest } from '../middleware/auth';
 
 const router = Router();
 
@@ -8,8 +8,9 @@ const router = Router();
 router.use(authenticateJWT);
 
 // GET /api/users - Get all users (Admin/Manager read allowed)
-router.get('/', authorizeRoles('ADMIN'), async (req, res) => {
+router.get('/', authorizeRoles('ADMIN', 'MANAGER'), async (req: AuthRequest, res) => {
   try {
+    // CLC (Manager) can see all users, but in UI they will be focused on HOS
     const users = await User.find({}).select('-password').sort({ createdAt: -1 });
     return res.json(users);
   } catch (error: any) {
@@ -17,8 +18,8 @@ router.get('/', authorizeRoles('ADMIN'), async (req, res) => {
   }
 });
 
-// POST /api/users - Create user (Admin only)
-router.post('/', authorizeRoles('ADMIN'), async (req, res) => {
+// POST /api/users - Create user (Admin and Manager allowed)
+router.post('/', authorizeRoles('ADMIN', 'MANAGER'), async (req: AuthRequest, res) => {
   const { name, email, password, role } = req.body;
   if (!name || !email || !password || !role) {
     return res.status(400).json({ message: 'All fields are required' });
@@ -26,6 +27,11 @@ router.post('/', authorizeRoles('ADMIN'), async (req, res) => {
 
   if (!['ADMIN', 'MANAGER', 'SALESMAN', 'SALESMANAGER'].includes(role)) {
     return res.status(400).json({ message: 'Invalid role selection' });
+  }
+
+  // Manager (CLC) can only create SALESMAN (HOS)
+  if (req.user!.role === 'MANAGER' && role !== 'SALESMAN') {
+    return res.status(403).json({ message: 'CLC can only create HOS (salesman) profiles.' });
   }
 
   try {
@@ -51,13 +57,23 @@ router.post('/', authorizeRoles('ADMIN'), async (req, res) => {
   }
 });
 
-// PUT /api/users/:id - Update user (Admin only)
-router.put('/:id', authorizeRoles('ADMIN'), async (req, res) => {
+// PUT /api/users/:id - Update user (Admin and Manager allowed)
+router.put('/:id', authorizeRoles('ADMIN', 'MANAGER'), async (req: AuthRequest, res) => {
   const { name, email, role, status, password } = req.body;
   try {
     const user = await User.findById(req.params.id);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Manager (CLC) can only edit SALESMAN (HOS)
+    if (req.user!.role === 'MANAGER') {
+      if (user.role !== 'SALESMAN') {
+        return res.status(403).json({ message: 'CLC can only edit HOS (salesman) profiles.' });
+      }
+      if (role && role !== 'SALESMAN') {
+        return res.status(403).json({ message: 'CLC cannot change role to non-HOS.' });
+      }
     }
 
     // Update details
@@ -95,12 +111,17 @@ router.put('/:id', authorizeRoles('ADMIN'), async (req, res) => {
   }
 });
 
-// DELETE /api/users/:id - Delete user (Admin only)
-router.delete('/:id', authorizeRoles('ADMIN'), async (req, res) => {
+// DELETE /api/users/:id - Delete user (Admin and Manager allowed)
+router.delete('/:id', authorizeRoles('ADMIN', 'MANAGER'), async (req: AuthRequest, res) => {
   try {
     const user = await User.findById(req.params.id);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Manager (CLC) can only delete SALESMAN (HOS)
+    if (req.user!.role === 'MANAGER' && user.role !== 'SALESMAN') {
+      return res.status(403).json({ message: 'CLC can only delete HOS (salesman) profiles.' });
     }
 
     // Do not delete last admin
