@@ -21,18 +21,13 @@ interface Salesman {
   status: string;
 }
 
-interface Product {
+interface PersonalStockItem {
   _id: string;
+  productId: string;
   name: string;
   sku: string;
-  unit: string;
-}
-
-interface SalesmanStock {
-  _id: string;
-  salesmanId: { _id: string } | null;
-  productId: { _id: string } | null;
   quantity: number;
+  unit: string;
 }
 
 interface TransferRecord {
@@ -49,18 +44,16 @@ interface TransferRecord {
   createdAt: string;
 }
 
-export default function ManagerStockTransfer() {
+export default function SalesmanStockTransfer() {
   const { showToast } = useToast();
 
   // Data lists
   const [salesmen, setSalesmen] = useState<Salesman[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [allStock, setAllStock] = useState<SalesmanStock[]>([]);
+  const [personalStock, setPersonalStock] = useState<PersonalStockItem[]>([]);
   const [transfers, setTransfers] = useState<TransferRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Form states
-  const [selectedSourceSalesmanId, setSelectedSourceSalesmanId] = useState('');
   const [selectedTargetSalesmanId, setSelectedTargetSalesmanId] = useState('');
   const [selectedProductId, setSelectedProductId] = useState('');
   const [quantity, setQuantity] = useState('');
@@ -68,37 +61,31 @@ export default function ManagerStockTransfer() {
 
   const loadData = async () => {
     try {
-      const [usersRes, productsRes, stockRes, transfersRes] = await Promise.all([
+      const [usersRes, stockRes, transfersRes] = await Promise.all([
         api.get('/users'),
-        api.get('/products'),
-        api.get('/inventory/salesman-stock'),
+        api.get('/inventory/my-stock'),
         api.get('/stock-transfers'),
       ]);
 
-      // Filter users to only include active salesmen
+      // Filter users to only include active salesmen, excluding current user
+      const storedUser = localStorage.getItem('user');
+      const currentUser = storedUser ? JSON.parse(storedUser) : null;
+      
       const activeSalesmen = usersRes.data.filter(
-        (u: any) => u.role === 'SALESMAN' && u.status === 'active'
+        (u: any) => u.role === 'SALESMAN' && u.status === 'active' && (currentUser ? u._id !== currentUser.id : true)
       );
       setSalesmen(activeSalesmen);
 
-      // Only show active products for transfer
-      const activeProducts = productsRes.data.filter((p: any) => p.status === 'active');
-      setProducts(activeProducts);
-
-      setAllStock(stockRes.data);
+      // Set personal stock
+      setPersonalStock(stockRes.data);
       setTransfers(transfersRes.data);
 
       // Pre-select first values if available
-      if (activeSalesmen.length > 0) {
-        if (!selectedSourceSalesmanId) {
-          setSelectedSourceSalesmanId(activeSalesmen[0]._id);
-        }
-        if (!selectedTargetSalesmanId) {
-          setSelectedTargetSalesmanId(activeSalesmen[1]?._id || activeSalesmen[0]._id);
-        }
+      if (activeSalesmen.length > 0 && !selectedTargetSalesmanId) {
+        setSelectedTargetSalesmanId(activeSalesmen[0]._id);
       }
-      if (activeProducts.length > 0 && !selectedProductId) {
-        setSelectedProductId(activeProducts[0]._id);
+      if (stockRes.data.length > 0 && !selectedProductId) {
+        setSelectedProductId(stockRes.data[0].productId);
       }
     } catch (error) {
       showToast('Failed to load stock transfer data.', 'error');
@@ -114,20 +101,12 @@ export default function ManagerStockTransfer() {
   const handleTransferSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!selectedSourceSalesmanId) {
-      showToast('Please select a source salesman.', 'error');
-      return;
-    }
     if (!selectedTargetSalesmanId) {
       showToast('Please select a target salesman.', 'error');
       return;
     }
-    if (selectedSourceSalesmanId === selectedTargetSalesmanId) {
-      showToast('Source and target salesmen must be different.', 'error');
-      return;
-    }
     if (!selectedProductId) {
-      showToast('Please select a product.', 'error');
+      showToast('Please select a product from your stock.', 'error');
       return;
     }
 
@@ -138,20 +117,17 @@ export default function ManagerStockTransfer() {
     }
 
     // Check available stock locally
-    const sourceStockRecord = allStock.find(
-      (s) => s.salesmanId?._id === selectedSourceSalesmanId && s.productId?._id === selectedProductId
-    );
-    const availableQty = sourceStockRecord ? sourceStockRecord.quantity : 0;
+    const productRecord = personalStock.find((s) => s.productId === selectedProductId);
+    const availableQty = productRecord ? productRecord.quantity : 0;
 
     if (availableQty < qty) {
-      showToast(`Insufficient stock for source salesman. Available quantity: ${availableQty}`, 'error');
+      showToast(`Insufficient stock. You only have ${availableQty} available.`, 'error');
       return;
     }
 
     setSubmitting(true);
     try {
       await api.post('/stock-transfers', {
-        fromSalesmanId: selectedSourceSalesmanId,
         toSalesmanId: selectedTargetSalesmanId,
         productId: selectedProductId,
         quantity: qty,
@@ -169,18 +145,14 @@ export default function ManagerStockTransfer() {
     }
   };
 
-  const sourceStockRecord = allStock.find(
-    (s) => s.salesmanId?._id === selectedSourceSalesmanId && s.productId?._id === selectedProductId
-  );
-  const availableStock = sourceStockRecord ? sourceStockRecord.quantity : 0;
-  const selectedProduct = products.find((p) => p._id === selectedProductId);
+  const selectedStockRecord = personalStock.find((s) => s.productId === selectedProductId);
 
   return (
     <div className="space-y-8">
       {/* Overview Head */}
       <div>
-        <h2 className="text-2xl font-bold tracking-tight text-slate-900">Stock Distribution</h2>
-        <p className="text-sm text-slate-500">Transfer company inventory directly from one salesman's personal stock to another</p>
+        <h2 className="text-2xl font-bold tracking-tight text-slate-900">Transfer Stock</h2>
+        <p className="text-sm text-slate-500">Transfer items from your personal stock allocation directly to another salesman</p>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -196,29 +168,10 @@ export default function ManagerStockTransfer() {
             </div>
           ) : (
             <form onSubmit={handleTransferSubmit} className="space-y-4">
-              {/* Source Salesman Select */}
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
-                  From Salesman (Source)
-                </label>
-                <select
-                  value={selectedSourceSalesmanId}
-                  onChange={(e) => setSelectedSourceSalesmanId(e.target.value)}
-                  className="mt-1 block w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                >
-                  {salesmen.map((s) => (
-                    <option key={s._id} value={s._id}>
-                      {s.name} ({s.email})
-                    </option>
-                  ))}
-                  {salesmen.length === 0 && <option value="">No active salesmen</option>}
-                </select>
-              </div>
-
               {/* Target Salesman Select */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
-                  To Salesman (Target)
+                  Transfer To (Salesman)
                 </label>
                 <select
                   value={selectedTargetSalesmanId}
@@ -230,11 +183,11 @@ export default function ManagerStockTransfer() {
                       {s.name} ({s.email})
                     </option>
                   ))}
-                  {salesmen.length === 0 && <option value="">No active salesmen</option>}
+                  {salesmen.length === 0 && <option value="">No other active salesmen available</option>}
                 </select>
               </div>
 
-              {/* Product Select */}
+              {/* Product Select from Personal Stock */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
                   Select Product Item
@@ -244,21 +197,21 @@ export default function ManagerStockTransfer() {
                   onChange={(e) => setSelectedProductId(e.target.value)}
                   className="mt-1 block w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
-                  {products.map((p) => (
-                    <option key={p._id} value={p._id}>
-                      {p.name} (SKU: {p.sku})
+                  {personalStock.map((s) => (
+                    <option key={s.productId} value={s.productId}>
+                      {s.name} (SKU: {s.sku} | In Hand: {s.quantity})
                     </option>
                   ))}
-                  {products.length === 0 && <option value="">No products available</option>}
+                  {personalStock.length === 0 && <option value="">No stock items in your inventory</option>}
                 </select>
               </div>
 
               {/* Available Stock Indicator */}
-              {selectedProduct && (
+              {selectedStockRecord && (
                 <div className="rounded-xl bg-slate-50 border border-slate-200 p-3.5 flex items-center justify-between text-xs">
-                  <span className="font-semibold text-slate-500">Source Available Stock:</span>
-                  <span className={`font-black ${availableStock > 0 ? 'text-slate-800' : 'text-rose-600'}`}>
-                    {availableStock} {selectedProduct.unit}
+                  <span className="font-semibold text-slate-500">Your Available Stock:</span>
+                  <span className={`font-black ${selectedStockRecord.quantity > 0 ? 'text-slate-800' : 'text-rose-600'}`}>
+                    {selectedStockRecord.quantity} {selectedStockRecord.unit}
                   </span>
                 </div>
               )}
@@ -270,7 +223,7 @@ export default function ManagerStockTransfer() {
                 </label>
                 <input
                   type="number"
-                  placeholder="e.g. 10"
+                  placeholder="e.g. 5"
                   value={quantity}
                   onChange={(e) => setQuantity(e.target.value)}
                   className="mt-1 block w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -279,7 +232,7 @@ export default function ManagerStockTransfer() {
 
               <button
                 type="submit"
-                disabled={submitting || salesmen.length === 0 || products.length === 0}
+                disabled={submitting || salesmen.length === 0 || personalStock.length === 0}
                 className="mt-2 inline-flex w-full items-center justify-center rounded-xl bg-indigo-600 px-4 py-3 text-sm font-bold text-white hover:bg-indigo-500 disabled:opacity-50 transition-all shadow-md shadow-indigo-600/20"
               >
                 {submitting ? (
@@ -296,7 +249,7 @@ export default function ManagerStockTransfer() {
         {/* Transfer History Table */}
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
           <h3 className="text-sm font-bold uppercase tracking-wider text-slate-800 mb-6 flex items-center">
-            <Boxes className="mr-2 h-5 w-5 text-indigo-600" /> Stock Transfer History
+            <Boxes className="mr-2 h-5 w-5 text-indigo-600" /> My Transfer History
           </h3>
 
           {loading ? (
@@ -312,7 +265,6 @@ export default function ManagerStockTransfer() {
                     <th className="pb-3">Product Name</th>
                     <th className="pb-3">Qty</th>
                     <th className="pb-3">From → To</th>
-                    <th className="pb-3">Performed By</th>
                     <th className="pb-3 text-right">Date</th>
                   </tr>
                 </thead>
@@ -334,7 +286,6 @@ export default function ManagerStockTransfer() {
                         <ArrowRight className="h-3 w-3 inline mx-1.5 text-slate-400" />
                         <span className="text-slate-800 text-xs font-bold">{t.to}</span>
                       </td>
-                      <td className="py-3.5 text-xs text-slate-500">{t.performedBy?.name || 'System'}</td>
                       <td className="py-3.5 text-right text-xs text-slate-400">
                         <span className="flex items-center justify-end">
                           <Calendar className="h-3.5 w-3.5 mr-1 text-slate-300" />
@@ -345,7 +296,7 @@ export default function ManagerStockTransfer() {
                   ))}
                   {transfers.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="py-8 text-center text-slate-400 text-xs">No stock transfers executed yet</td>
+                      <td colSpan={5} className="py-8 text-center text-slate-400 text-xs">No stock transfers executed yet</td>
                     </tr>
                   )}
                 </tbody>

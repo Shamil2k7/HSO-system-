@@ -43,7 +43,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
           { name: 'Manage Users', href: '/admin/users', icon: Users },
           { name: 'Products Catalog', href: '/admin/products', icon: ShoppingBag },
-          { name: 'Main Inventory', href: '/admin/inventory', icon: Boxes },
+          { name: 'Salesmen Inventory', href: '/admin/inventory', icon: Boxes },
           { name: 'Sales Invoices', href: '/admin/sales', icon: DollarSign },
           { name: 'Payments', href: '/admin/payments', icon: CreditCard },
           { name: 'Reports', href: '/admin/reports', icon: TrendingUp },
@@ -52,7 +52,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         return [
           { name: 'Dashboard', href: '/manager/dashboard', icon: LayoutDashboard },
           { name: 'Products Catalog', href: '/manager/products', icon: ShoppingBag },
-          { name: 'Main Inventory', href: '/manager/inventory', icon: Boxes },
+          { name: 'Salesmen Inventory', href: '/manager/inventory', icon: Boxes },
           { name: 'Stock Transfer', href: '/manager/stock-transfer', icon: Truck },
           { name: 'Salesmen Performance', href: '/manager/salesmen', icon: Users },
           { name: 'Business Reports', href: '/manager/reports', icon: TrendingUp },
@@ -65,25 +65,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           { name: 'Payments', href: '/manager/payments', icon: CreditCard },
           { name: 'Business Reports', href: '/manager/reports', icon: TrendingUp },
         ];
-      case 'WAREHOUSEMANAGER':
-        return [
-          { name: 'Dashboard', href: '/manager/dashboard', icon: LayoutDashboard },
-          { name: 'Products Catalog', href: '/manager/products', icon: ShoppingBag },
-          { name: 'Main Inventory', href: '/manager/inventory', icon: Boxes },
-          { name: 'Stock Transfer', href: '/manager/stock-transfer', icon: Truck },
-        ];
       case 'SALESMAN':
         return [
           { name: 'Dashboard', href: '/salesman/dashboard', icon: LayoutDashboard },
           { name: 'Add Sale (POS)', href: '/salesman/add-sale', icon: ShoppingCart },
           { name: 'My Assigned Stock', href: '/salesman/my-stock', icon: Boxes },
-          { name: 'My Sales', href: '/salesman/sales', icon: DollarSign },
-          { name: 'My Collections', href: '/salesman/payments', icon: CreditCard },
-        ];
-      case 'CASHIER':
-        return [
-          { name: 'Dashboard', href: '/salesman/dashboard', icon: LayoutDashboard },
-          { name: 'Add Sale (POS)', href: '/salesman/add-sale', icon: ShoppingCart },
+          { name: 'Stock Transfer', href: '/salesman/stock-transfer', icon: Truck },
           { name: 'My Sales', href: '/salesman/sales', icon: DollarSign },
           { name: 'My Collections', href: '/salesman/payments', icon: CreditCard },
         ];
@@ -102,10 +89,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         return 'bg-blue-50 text-blue-700 border-blue-200';
       case 'SALESMANAGER':
         return 'bg-sky-50 text-sky-700 border-sky-200';
-      case 'WAREHOUSEMANAGER':
-        return 'bg-amber-50 text-amber-700 border-amber-200';
-      case 'CASHIER':
-        return 'bg-rose-50 text-rose-700 border-rose-200';
       case 'SALESMAN':
         return 'bg-emerald-50 text-emerald-700 border-emerald-200';
       default:

@@ -24,7 +24,7 @@ router.post('/', authorizeRoles('ADMIN'), async (req, res) => {
     return res.status(400).json({ message: 'All fields are required' });
   }
 
-  if (!['ADMIN', 'MANAGER', 'SALESMAN', 'SALESMANAGER', 'WAREHOUSEMANAGER', 'CASHIER'].includes(role)) {
+  if (!['ADMIN', 'MANAGER', 'SALESMAN', 'SALESMANAGER'].includes(role)) {
     return res.status(400).json({ message: 'Invalid role selection' });
   }
 
@@ -70,7 +70,7 @@ router.put('/:id', authorizeRoles('ADMIN'), async (req, res) => {
       user.email = email;
     }
     if (role) {
-      if (!['ADMIN', 'MANAGER', 'SALESMAN', 'SALESMANAGER', 'WAREHOUSEMANAGER', 'CASHIER'].includes(role)) {
+      if (!['ADMIN', 'MANAGER', 'SALESMAN', 'SALESMANAGER'].includes(role)) {
         return res.status(400).json({ message: 'Invalid role' });
       }
       user.role = role as any;

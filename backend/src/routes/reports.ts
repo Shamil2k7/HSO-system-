@@ -147,7 +147,7 @@ router.get('/payments', async (req, res) => {
 // GET /api/reports/stock - Complete Inventory and Movement Ledger Report
 router.get('/stock', async (req, res) => {
   try {
-    // 1. Warehouse stock
+    // 1. Fetch products
     const products = await Product.find({}).sort({ name: 1 });
 
     // 2. Salesman assigned stock
@@ -167,16 +167,35 @@ router.get('/stock', async (req, res) => {
     const transfers = await StockTransfer.find({})
       .populate('productId', 'name sku')
       .populate('toSalesmanId', 'name')
-      .populate('managerId', 'name')
+      .populate('fromSalesmanId', 'name')
+      .populate('performedBy', 'name')
       .sort({ createdAt: -1 })
       .limit(50);
 
+    // Calculate product stock map across all salesmen
+    const productStocksMap = new Map<string, number>();
+    salesmanStock.forEach((ss) => {
+      if (ss.productId) {
+        const prodId = ss.productId._id.toString();
+        productStocksMap.set(prodId, (productStocksMap.get(prodId) || 0) + ss.quantity);
+      }
+    });
+
+    // Construct virtual warehouseStock
+    const warehouseStock = products.map((p) => {
+      const totalStock = productStocksMap.get(p._id.toString()) || 0;
+      return {
+        ...p.toObject(),
+        mainStock: totalStock, // mapped to mainStock so frontend reports don't break
+      };
+    });
+
     // Calculate stock metrics
-    const lowStockItems = products.filter((p) => p.status === 'active' && p.mainStock <= p.minStockLevel);
-    const outOfStockItems = products.filter((p) => p.mainStock === 0);
+    const lowStockItems = warehouseStock.filter((p) => p.status === 'active' && p.mainStock <= p.minStockLevel);
+    const outOfStockItems = warehouseStock.filter((p) => p.mainStock === 0);
 
     return res.json({
-      warehouseStock: products,
+      warehouseStock,
       salesmanStock,
       movements,
       transfers,

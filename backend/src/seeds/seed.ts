@@ -69,14 +69,6 @@ async function seed() {
       status: 'active',
     });
 
-    const cashier = await User.create({
-      name: 'Emma Cashier',
-      email: 'cashier@erp.com',
-      password: 'password123',
-      role: 'CASHIER',
-      status: 'active',
-    });
-
     const salesManager = await User.create({
       name: 'Sarah Sales Manager',
       email: 'salesmanager@erp.com',
@@ -85,17 +77,9 @@ async function seed() {
       status: 'active',
     });
 
-    const warehouseManager = await User.create({
-      name: 'Bob Warehouse Manager',
-      email: 'warehousemanager@erp.com',
-      password: 'password123',
-      role: 'WAREHOUSEMANAGER',
-      status: 'active',
-    });
+    console.log('Seeded users: Admin, Manager, Salesmen (Rahul, Akhil, Niyas), Sales Manager.');
 
-    console.log('Seeded users: Admin, Manager, Salesmen (Rahul, Akhil, Niyas), Cashier, Sales Manager, Warehouse Manager.');
-
-    // 2. Create Company Products
+    // 2. Create Company Products (no mainStock)
     const shirt = await Product.create({
       name: 'ABC Shirt',
       sku: 'SH-001',
@@ -105,7 +89,6 @@ async function seed() {
       minStockLevel: 50,
       description: 'Premium quality cotton shirts',
       status: 'active',
-      mainStock: 500,
     });
 
     const pant = await Product.create({
@@ -117,7 +100,6 @@ async function seed() {
       minStockLevel: 30,
       description: 'Formal business trousers',
       status: 'active',
-      mainStock: 300,
     });
 
     const tshirt = await Product.create({
@@ -129,178 +111,114 @@ async function seed() {
       minStockLevel: 40,
       description: 'Comfortable casual t-shirt',
       status: 'active',
-      mainStock: 400,
     });
 
     console.log('Seeded products: ABC Shirt, ABC Pant, T-Shirt.');
 
-    // 3. Record Initial Stock Movements for Warehouse
+    // 3. Create Salesman Stock directly
+    // Rahul starts with 50 shirts
+    await SalesmanStock.create({ salesmanId: rahul._id, productId: shirt._id, quantity: 50 });
+    // Akhil starts with 10 shirts and 30 pants
+    await SalesmanStock.create({ salesmanId: akhil._id, productId: shirt._id, quantity: 10 });
+    await SalesmanStock.create({ salesmanId: akhil._id, productId: pant._id, quantity: 30 });
+    // Niyas starts with 40 T-Shirts
+    await SalesmanStock.create({ salesmanId: niyas._id, productId: tshirt._id, quantity: 40 });
+
+    console.log('Seeded initial salesman stocks.');
+
+    // 4. Log supplier stock added movements
     await StockMovement.create([
       {
         productId: shirt._id,
-        type: 'INITIAL',
-        quantity: 500,
+        type: 'STOCK_ADDED',
+        quantity: 50,
         from: 'Supplier',
-        to: 'Main Warehouse',
+        to: `Salesman: ${rahul.name}`,
         performedBy: manager._id,
-        notes: 'Initial stock intake',
+        notes: 'Initial seed stock',
       },
-      {
-        productId: pant._id,
-        type: 'INITIAL',
-        quantity: 300,
-        from: 'Supplier',
-        to: 'Main Warehouse',
-        performedBy: manager._id,
-        notes: 'Initial stock intake',
-      },
-      {
-        productId: tshirt._id,
-        type: 'INITIAL',
-        quantity: 400,
-        from: 'Supplier',
-        to: 'Main Warehouse',
-        performedBy: manager._id,
-        notes: 'Initial stock intake',
-      },
-    ]);
-    console.log('Logged initial stock movements.');
-
-    // 4. Seed Stock Transfers (to simulate pre-existing status)
-    // Transfer stock to Cashier Emma
-    shirt.mainStock -= 100;
-    await shirt.save();
-    pant.mainStock -= 50;
-    await pant.save();
-    tshirt.mainStock -= 80;
-    await tshirt.save();
-
-    await SalesmanStock.create([
-      { salesmanId: cashier._id, productId: shirt._id, quantity: 100 },
-      { salesmanId: cashier._id, productId: pant._id, quantity: 50 },
-      { salesmanId: cashier._id, productId: tshirt._id, quantity: 80 }
-    ]);
-    
-    await StockMovement.create([
       {
         productId: shirt._id,
-        type: 'TRANSFER',
-        quantity: -100,
-        from: 'Main Warehouse',
-        to: 'Cashier: Emma',
+        type: 'STOCK_ADDED',
+        quantity: 10,
+        from: 'Supplier',
+        to: `Salesman: ${akhil.name}`,
         performedBy: manager._id,
-        notes: 'Initial seed cashier stock',
+        notes: 'Initial seed stock',
       },
       {
         productId: pant._id,
-        type: 'TRANSFER',
-        quantity: -50,
-        from: 'Main Warehouse',
-        to: 'Cashier: Emma',
+        type: 'STOCK_ADDED',
+        quantity: 30,
+        from: 'Supplier',
+        to: `Salesman: ${akhil.name}`,
         performedBy: manager._id,
-        notes: 'Initial seed cashier stock',
+        notes: 'Initial seed stock',
       },
       {
         productId: tshirt._id,
-        type: 'TRANSFER',
-        quantity: -80,
-        from: 'Main Warehouse',
-        to: 'Cashier: Emma',
+        type: 'STOCK_ADDED',
+        quantity: 40,
+        from: 'Supplier',
+        to: `Salesman: ${niyas.name}`,
         performedBy: manager._id,
-        notes: 'Initial seed cashier stock',
-      }
+        notes: 'Initial seed stock',
+      },
     ]);
-    // Transfer 50 ABC Shirts to Rahul
-    shirt.mainStock -= 50;
-    await shirt.save();
 
-    await SalesmanStock.create({
-      salesmanId: rahul._id,
-      productId: shirt._id,
-      quantity: 50,
-    });
+    // 5. Seed a Salesman-to-Salesman transfer (Rahul transfers 10 shirts to Akhil)
+    // Update stock levels to reflect transfer:
+    // Rahul shirts: 50 -> 40
+    await SalesmanStock.updateOne(
+      { salesmanId: rahul._id, productId: shirt._id },
+      { $inc: { quantity: -10 } }
+    );
+    // Akhil shirts: 10 -> 20
+    await SalesmanStock.updateOne(
+      { salesmanId: akhil._id, productId: shirt._id },
+      { $inc: { quantity: 10 } }
+    );
 
+    // Create Stock Transfer record
     await StockTransfer.create({
       transferId: 'ST-0001',
       productId: shirt._id,
-      quantity: 50,
-      from: 'Main Warehouse',
-      to: 'Rahul',
-      toSalesmanId: rahul._id,
-      managerId: manager._id,
+      quantity: 10,
+      from: rahul.name,
+      fromSalesmanId: rahul._id,
+      to: akhil.name,
+      toSalesmanId: akhil._id,
+      performedBy: rahul._id,
       status: 'completed',
     });
 
-    await StockMovement.create({
-      productId: shirt._id,
-      type: 'TRANSFER',
-      quantity: -50,
-      from: 'Main Warehouse',
-      to: 'Salesman: Rahul',
-      performedBy: manager._id,
-      notes: 'Initial seed transfer',
-    });
-
-    // Transfer 30 ABC Pants and 10 Shirts to Akhil
-    shirt.mainStock -= 10;
-    await shirt.save();
-    pant.mainStock -= 30;
-    await pant.save();
-
-    await SalesmanStock.create([
-      { salesmanId: akhil._id, productId: shirt._id, quantity: 10 },
-      { salesmanId: akhil._id, productId: pant._id, quantity: 30 },
-    ]);
-
-    await StockTransfer.create([
-      {
-        transferId: 'ST-0002',
-        productId: shirt._id,
-        quantity: 10,
-        from: 'Main Warehouse',
-        to: 'Akhil',
-        toSalesmanId: akhil._id,
-        managerId: manager._id,
-        status: 'completed',
-      },
-      {
-        transferId: 'ST-0003',
-        productId: pant._id,
-        quantity: 30,
-        from: 'Main Warehouse',
-        to: 'Akhil',
-        toSalesmanId: akhil._id,
-        managerId: manager._id,
-        status: 'completed',
-      },
-    ]);
-
+    // Log Stock Transfer movements
     await StockMovement.create([
       {
         productId: shirt._id,
         type: 'TRANSFER',
         quantity: -10,
-        from: 'Main Warehouse',
-        to: 'Salesman: Akhil',
-        performedBy: manager._id,
-        notes: 'Initial seed transfer',
+        from: `Salesman: ${rahul.name}`,
+        to: `Salesman: ${akhil.name}`,
+        performedBy: rahul._id,
+        notes: 'Transfer ST-0001 (outgoing)',
       },
       {
-        productId: pant._id,
+        productId: shirt._id,
         type: 'TRANSFER',
-        quantity: -30,
-        from: 'Main Warehouse',
-        to: 'Salesman: Akhil',
-        performedBy: manager._id,
-        notes: 'Initial seed transfer',
+        quantity: 10,
+        from: `Salesman: ${rahul.name}`,
+        to: `Salesman: ${akhil.name}`,
+        performedBy: rahul._id,
+        notes: 'Transfer ST-0001 (incoming)',
       },
     ]);
 
-    console.log('Seeded stock transfers to Rahul & Akhil.');
+    console.log('Seeded a salesman-to-salesman transfer.');
 
-    // 5. Seed some past Sales to populate the dashboard analytics
+    // 6. Seed past sales
     // Rahul sold 5 shirts to 'Global Corp' last week (Completed)
-    const sale1 = await Sale.create({
+    await Sale.create({
       invoiceNumber: 'INV-0001',
       salesmanId: rahul._id,
       customerName: 'Global Corp',
@@ -332,7 +250,7 @@ async function seed() {
       ],
     });
 
-    // Update Rahul's stock in response to that past sale (quantity goes 50 -> 45)
+    // Update Rahul's stock (40 -> 35)
     await SalesmanStock.updateOne(
       { salesmanId: rahul._id, productId: shirt._id },
       { $inc: { quantity: -5 } }
@@ -342,14 +260,14 @@ async function seed() {
       productId: shirt._id,
       type: 'SALE',
       quantity: -5,
-      from: 'Salesman: Rahul',
+      from: `Salesman: ${rahul.name}`,
       to: 'Customer: Global Corp',
       performedBy: rahul._id,
       notes: 'Invoice INV-0001',
     });
 
-    // Akhil sold 2 Pants (Company) + 1 Leather Belt (Extra) to 'Jane Miller' 2 days ago (Pending)
-    const sale2 = await Sale.create({
+    // Akhil sold 2 Pants + 1 Leather Belt (Extra) to 'Jane Miller' 2 days ago (Pending)
+    await Sale.create({
       invoiceNumber: 'INV-0002',
       salesmanId: akhil._id,
       customerName: 'Jane Miller',
@@ -393,14 +311,13 @@ async function seed() {
       productId: pant._id,
       type: 'SALE',
       quantity: -2,
-      from: 'Salesman: Akhil',
+      from: `Salesman: ${akhil.name}`,
       to: 'Customer: Jane Miller',
       performedBy: akhil._id,
       notes: 'Invoice INV-0002',
     });
 
     console.log('Seeded past sales with stock deductions.');
-
     console.log('Seeding completed successfully!');
     process.exit(0);
   } catch (error) {

@@ -15,7 +15,7 @@ router.use(authenticateJWT);
 router.get('/', async (req: AuthRequest, res) => {
   try {
     let query = {};
-    if ((req.user!.role === 'SALESMAN' || req.user!.role === 'CASHIER')) {
+    if (req.user!.role === 'SALESMAN') {
       query = { salesmanId: req.user!.id };
     }
 
@@ -38,7 +38,7 @@ router.get('/:id', async (req: AuthRequest, res) => {
     }
 
     // Salesmen can only access their own invoices
-    if ((req.user!.role === 'SALESMAN' || req.user!.role === 'CASHIER') && sale.salesmanId._id.toString() !== req.user!.id) {
+    if (req.user!.role === 'SALESMAN' && sale.salesmanId._id.toString() !== req.user!.id) {
       return res.status(403).json({ message: 'Access denied: cannot view another salesman\'s invoices.' });
     }
 
@@ -49,7 +49,7 @@ router.get('/:id', async (req: AuthRequest, res) => {
 });
 
 // POST /api/sales - Record a new sale (Salesman only)
-router.post('/', authorizeRoles('SALESMAN', 'CASHIER'), async (req: AuthRequest, res) => {
+router.post('/', authorizeRoles('SALESMAN'), async (req: AuthRequest, res) => {
   const {
     customerName,
     customerPhone,
@@ -199,7 +199,7 @@ router.patch('/:id/payment', async (req: AuthRequest, res) => {
     }
 
     // Role verification: Salesman can only update their own invoice payments
-    if ((req.user!.role === 'SALESMAN' || req.user!.role === 'CASHIER') && sale.salesmanId.toString() !== req.user!.id) {
+    if (req.user!.role === 'SALESMAN' && sale.salesmanId.toString() !== req.user!.id) {
       return res.status(403).json({ message: 'Access denied: cannot update another salesman\'s invoices.' });
     }
 

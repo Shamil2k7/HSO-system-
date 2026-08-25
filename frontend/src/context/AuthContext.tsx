@@ -8,7 +8,7 @@ export interface UserType {
   id: string;
   name: string;
   email: string;
-  role: 'ADMIN' | 'MANAGER' | 'SALESMAN' | 'SALESMANAGER' | 'WAREHOUSEMANAGER' | 'CASHIER';
+  role: 'ADMIN' | 'MANAGER' | 'SALESMAN' | 'SALESMANAGER';
   status: string;
 }
 
@@ -65,9 +65,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const redirectToDashboard = (role: string) => {
     if (role === 'ADMIN') {
       router.push('/admin/dashboard');
-    } else if (role === 'MANAGER' || role === 'SALESMANAGER' || role === 'WAREHOUSEMANAGER') {
+    } else if (role === 'MANAGER' || role === 'SALESMANAGER') {
       router.push('/manager/dashboard');
-    } else if (role === 'SALESMAN' || role === 'CASHIER') {
+    } else if (role === 'SALESMAN') {
       router.push('/salesman/dashboard');
     } else {
       router.push('/login');

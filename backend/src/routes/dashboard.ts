@@ -12,7 +12,7 @@ const router = Router();
 router.use(authenticateJWT);
 
 // GET /api/dashboard/salesman - Salesman Specific Stats
-router.get('/salesman', authorizeRoles('SALESMAN', 'CASHIER'), async (req: AuthRequest, res) => {
+router.get('/salesman', authorizeRoles('SALESMAN'), async (req: AuthRequest, res) => {
   try {
     const salesmanId = req.user!.id;
     const now = new Date();
@@ -109,7 +109,7 @@ router.get('/salesman', authorizeRoles('SALESMAN', 'CASHIER'), async (req: AuthR
 });
 
 // GET /api/dashboard/manager - Manager and Admin Stats
-router.get('/manager', authorizeRoles('MANAGER', 'ADMIN', 'SALESMANAGER', 'WAREHOUSEMANAGER'), async (req: AuthRequest, res) => {
+router.get('/manager', authorizeRoles('MANAGER', 'ADMIN', 'SALESMANAGER'), async (req: AuthRequest, res) => {
   try {
     const now = new Date();
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -150,15 +150,38 @@ router.get('/manager', authorizeRoles('MANAGER', 'ADMIN', 'SALESMANAGER', 'WAREH
       }
     });
 
-    // 2. Main warehouse stock details
+    // 2. Aggregate stock details across all salesmen
     const products = await Product.find({});
+    const salesmanStock = await SalesmanStock.find({});
+    
+    // Create product stock lookup map
+    const productStocksMap = new Map<string, number>();
+    salesmanStock.forEach((ss) => {
+      if (ss.productId) {
+        const prodId = ss.productId.toString();
+        productStocksMap.set(prodId, (productStocksMap.get(prodId) || 0) + ss.quantity);
+      }
+    });
+
     let mainStockTotal = 0;
     let lowStockCount = 0;
+    const lowStockAlertList: any[] = [];
 
     products.forEach((product) => {
-      mainStockTotal += product.mainStock;
-      if (product.status === 'active' && product.mainStock <= product.minStockLevel) {
+      const totalStock = productStocksMap.get(product._id.toString()) || 0;
+      mainStockTotal += totalStock;
+      
+      const isLow = product.status === 'active' && totalStock <= product.minStockLevel;
+      if (isLow) {
         lowStockCount++;
+        lowStockAlertList.push({
+          _id: product._id,
+          name: product.name,
+          sku: product.sku,
+          mainStock: totalStock, // mapped to mainStock so frontend continues to display it
+          minStockLevel: product.minStockLevel,
+          unit: product.unit,
+        });
       }
     });
 
@@ -236,11 +259,7 @@ router.get('/manager', authorizeRoles('MANAGER', 'ADMIN', 'SALESMANAGER', 'WAREH
       .limit(8);
 
     // 7. Low Stock alerts (top 5)
-    const lowStockAlerts = await Product.find({
-      status: 'active',
-      $expr: { $lte: ['$mainStock', '$minStockLevel'] }
-    })
-      .limit(5);
+    const lowStockAlerts = lowStockAlertList.slice(0, 5);
 
     return res.json({
       metrics: {

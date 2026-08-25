@@ -14,45 +14,63 @@ import {
   FileSpreadsheet,
 } from 'lucide-react';
 
-interface ProductData {
+interface SalesmanStockData {
   _id: string;
-  name: string;
-  sku: string;
-  category: string;
-  unit: string;
-  sellingPrice: number;
-  minStockLevel: number;
-  mainStock: number;
-  status: 'active' | 'inactive';
+  salesmanId: { _id: string; name: string; email: string } | null;
+  productId: { _id: string; name: string; sku: string; category: string; unit: string; minStockLevel: number; status: string } | null;
+  quantity: number;
+  updatedAt: string;
 }
 
 export default function ManagerInventory() {
   const { showToast } = useToast();
-  const [products, setProducts] = useState<ProductData[]>([]);
+  const [stock, setStock] = useState<SalesmanStockData[]>([]);
+  const [salesmen, setSalesmen] = useState<any[]>([]);
+  const [productsList, setProductsList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const [selectedSalesmanId, setSelectedSalesmanId] = useState('');
   const [selectedProductId, setSelectedProductId] = useState('');
   const [quantity, setQuantity] = useState('');
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const fetchInventory = async () => {
+  const loadData = async () => {
     try {
-      const response = await api.get('/inventory/main');
-      setProducts(response.data);
+      const [stockRes, usersRes, productsRes] = await Promise.all([
+        api.get('/inventory/salesman-stock'),
+        api.get('/users'),
+        api.get('/products'),
+      ]);
+
+      setStock(stockRes.data);
+      
+      const activeSalesmen = usersRes.data.filter((u: any) => u.role === 'SALESMAN' && u.status === 'active');
+      setSalesmen(activeSalesmen);
+
+      const activeProducts = productsRes.data.filter((p: any) => p.status === 'active');
+      setProductsList(activeProducts);
+
+      if (activeSalesmen.length > 0) {
+        setSelectedSalesmanId(activeSalesmen[0]._id);
+      }
+      if (activeProducts.length > 0) {
+        setSelectedProductId(activeProducts[0]._id);
+      }
     } catch (error) {
-      showToast('Failed to load main inventory.', 'error');
+      showToast('Failed to load inventory data.', 'error');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchInventory();
+    loadData();
   }, []);
 
-  const openAddStockModal = (productId: string = '') => {
-    setSelectedProductId(productId || (products[0]?._id || ''));
+  const openAddStockModal = (salesmanId: string = '', productId: string = '') => {
+    setSelectedSalesmanId(salesmanId || (salesmen[0]?._id || ''));
+    setSelectedProductId(productId || (productsList[0]?._id || ''));
     setQuantity('');
     setNotes('');
     setModalOpen(true);
@@ -60,6 +78,10 @@ export default function ManagerInventory() {
 
   const handleAddStockSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedSalesmanId) {
+      showToast('Please select a salesman.', 'error');
+      return;
+    }
     if (!selectedProductId) {
       showToast('Please select a product.', 'error');
       return;
@@ -74,13 +96,15 @@ export default function ManagerInventory() {
     setSubmitting(true);
     try {
       await api.post('/inventory/add-stock', {
+        salesmanId: selectedSalesmanId,
         productId: selectedProductId,
         quantity: qty,
-        notes: notes || 'Warehouse replenishment',
+        notes: notes || 'Direct supply to salesman',
       });
-      showToast('Stock added successfully', 'success');
+      showToast('Stock replenished successfully', 'success');
       setModalOpen(false);
-      fetchInventory();
+      setLoading(true);
+      await loadData();
     } catch (error: any) {
       showToast(error.response?.data?.message || 'Failed to replenish stock.', 'error');
     } finally {
@@ -93,33 +117,33 @@ export default function ManagerInventory() {
       {/* Header Panel */}
       <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900">Warehouse Inventory</h2>
-          <p className="text-sm text-slate-500">Track and replenish main stock items stored in the Central Warehouse</p>
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900">Salesmen Inventory</h2>
+          <p className="text-sm text-slate-500">Track and replenish stock assigned directly to salesmen's personal allocation</p>
         </div>
         <button
-          onClick={() => openAddStockModal('')}
+          onClick={() => openAddStockModal('', '')}
           className="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-500 shadow-md shadow-indigo-600/20 transition-all"
         >
-          <Plus className="mr-1.5 h-5 w-5" /> Replenish Stock
+          <Plus className="mr-1.5 h-5 w-5" /> Replenish Salesman Stock
         </button>
       </div>
 
       {/* Main Stock Summary Grid */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Total Catalog SKU Count</p>
-          <h3 className="mt-2 text-2xl font-black text-slate-900">{products.length}</h3>
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Catalog SKU Count</p>
+          <h3 className="mt-2 text-2xl font-black text-slate-900">{productsList.length} SKUs</h3>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Total Warehouse Stock</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Total Allocated Stock</p>
           <h3 className="mt-2 text-2xl font-black text-indigo-600">
-            {products.reduce((acc, p) => acc + p.mainStock, 0).toLocaleString()} units
+            {stock.reduce((acc, s) => acc + s.quantity, 0).toLocaleString()} units
           </h3>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Low Stock SKU Items</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Low Stock Allocations</p>
           <h3 className="mt-2 text-2xl font-black text-rose-600">
-            {products.filter((p) => p.status === 'active' && p.mainStock <= p.minStockLevel).length}
+            {stock.filter((s) => s.productId && s.productId.status === 'active' && s.quantity <= s.productId.minStockLevel).length}
           </h3>
         </div>
       </div>
@@ -136,27 +160,29 @@ export default function ManagerInventory() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50/55 text-xs font-bold uppercase text-slate-400">
+                  <th className="px-6 py-3.5">Salesman</th>
                   <th className="px-6 py-3.5">SKU</th>
                   <th className="px-6 py-3.5">Product Name</th>
                   <th className="px-6 py-3.5">Category</th>
-                  <th className="px-6 py-3.5">Warehouse Balance</th>
+                  <th className="px-6 py-3.5">Allocated Balance</th>
                   <th className="px-6 py-3.5">Safety Point</th>
                   <th className="px-6 py-3.5">Status Check</th>
                   <th className="px-6 py-3.5 text-center">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-sm font-medium text-slate-700">
-                {products.map((p) => {
-                  const isLow = p.status === 'active' && p.mainStock <= p.minStockLevel;
+                {stock.map((s) => {
+                  const isLow = s.productId && s.productId.status === 'active' && s.quantity <= s.productId.minStockLevel;
                   return (
-                    <tr key={p._id} className="hover:bg-slate-50/30">
-                      <td className="px-6 py-4 font-mono font-bold text-slate-600">{p.sku}</td>
-                      <td className="px-6 py-4 font-bold text-slate-800">{p.name}</td>
-                      <td className="px-6 py-4">{p.category}</td>
+                    <tr key={s._id} className="hover:bg-slate-50/30">
+                      <td className="px-6 py-4 font-bold text-slate-800">{s.salesmanId?.name || 'Unknown Salesman'}</td>
+                      <td className="px-6 py-4 font-mono font-bold text-slate-600">{s.productId?.sku || '-'}</td>
+                      <td className="px-6 py-4 font-bold text-slate-800">{s.productId?.name || 'Deleted Product'}</td>
+                      <td className="px-6 py-4">{s.productId?.category || '-'}</td>
                       <td className={`px-6 py-4 font-extrabold ${isLow ? 'text-rose-600' : 'text-slate-900'}`}>
-                        {p.mainStock} {p.unit}
+                        {s.quantity} {s.productId?.unit || 'pcs'}
                       </td>
-                      <td className="px-6 py-4 text-slate-400">{p.minStockLevel} {p.unit}</td>
+                      <td className="px-6 py-4 text-slate-400">{s.productId?.minStockLevel || 0} {s.productId?.unit || 'pcs'}</td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                           isLow
@@ -168,7 +194,7 @@ export default function ManagerInventory() {
                       </td>
                       <td className="px-6 py-4 text-center">
                         <button
-                          onClick={() => openAddStockModal(p._id)}
+                          onClick={() => openAddStockModal(s.salesmanId?._id, s.productId?._id)}
                           className="inline-flex items-center text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 border border-indigo-100 hover:bg-indigo-100 rounded-lg px-2.5 py-1.5 transition-all"
                         >
                           <Plus className="mr-1 h-3 w-3" /> Replenish
@@ -177,9 +203,9 @@ export default function ManagerInventory() {
                     </tr>
                   );
                 })}
-                {products.length === 0 && (
+                {stock.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-6 py-8 text-center text-slate-400 text-xs">No products registered in system</td>
+                    <td colSpan={8} className="px-6 py-8 text-center text-slate-400 text-xs">No product allocations registered in system</td>
                   </tr>
                 )}
               </tbody>
@@ -195,7 +221,7 @@ export default function ManagerInventory() {
             {/* Modal Header */}
             <div className="flex items-center justify-between pb-4 border-b border-slate-100">
               <h3 className="text-lg font-bold text-slate-900 flex items-center">
-                <Boxes className="mr-2 h-5 w-5 text-indigo-600" /> Replenish Main Stock
+                <Boxes className="mr-2 h-5 w-5 text-indigo-600" /> Replenish Salesman Stock
               </h3>
               <button
                 onClick={() => setModalOpen(false)}
@@ -209,6 +235,24 @@ export default function ManagerInventory() {
             <form onSubmit={handleAddStockSubmit} className="mt-4 space-y-4">
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Select Salesman
+                </label>
+                <select
+                  value={selectedSalesmanId}
+                  onChange={(e) => setSelectedSalesmanId(e.target.value)}
+                  className="mt-1 block w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  {salesmen.map((s) => (
+                    <option key={s._id} value={s._id}>
+                      {s.name} ({s.email})
+                    </option>
+                  ))}
+                  {salesmen.length === 0 && <option value="">No active salesmen</option>}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
                   Select Product Item
                 </label>
                 <select
@@ -216,11 +260,12 @@ export default function ManagerInventory() {
                   onChange={(e) => setSelectedProductId(e.target.value)}
                   className="mt-1 block w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
-                  {products.map((p) => (
+                  {productsList.map((p) => (
                     <option key={p._id} value={p._id}>
-                      {p.name} (SKU: {p.sku} | Stock: {p.mainStock})
+                      {p.name} (SKU: {p.sku})
                     </option>
                   ))}
+                  {productsList.length === 0 && <option value="">No active products</option>}
                 </select>
               </div>
 
@@ -243,7 +288,7 @@ export default function ManagerInventory() {
                 </label>
                 <textarea
                   rows={2}
-                  placeholder="e.g. Received from factory, batch F-42"
+                  placeholder="e.g. Supplier direct shipment, Batch F-99"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   className="mt-1 block w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -260,7 +305,7 @@ export default function ManagerInventory() {
                 </button>
                 <button
                   type="submit"
-                  disabled={submitting}
+                  disabled={submitting || salesmen.length === 0 || productsList.length === 0}
                   className="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-500 disabled:opacity-50"
                 >
                   {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

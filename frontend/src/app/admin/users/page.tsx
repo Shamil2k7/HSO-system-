@@ -21,7 +21,7 @@ import {
 const userSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Please enter a valid email address'),
-  role: z.enum(['ADMIN', 'MANAGER', 'SALESMAN', 'SALESMANAGER', 'WAREHOUSEMANAGER', 'CASHIER']),
+  role: z.enum(['ADMIN', 'MANAGER', 'SALESMAN', 'SALESMANAGER']),
   status: z.enum(['active', 'inactive']).default('active'),
   password: z.string().optional().or(z.literal('')),
 });
@@ -32,7 +32,7 @@ interface UserData {
   _id: string;
   name: string;
   email: string;
-  role: 'ADMIN' | 'MANAGER' | 'SALESMAN' | 'SALESMANAGER' | 'WAREHOUSEMANAGER' | 'CASHIER';
+  role: 'ADMIN' | 'MANAGER' | 'SALESMAN' | 'SALESMANAGER';
   status: 'active' | 'inactive';
   createdAt: string;
 }
@@ -313,8 +313,6 @@ export default function AdminUsers() {
                     <option value="SALESMAN">Salesman</option>
                     <option value="MANAGER">Manager</option>
                     <option value="SALESMANAGER">Sales Manager</option>
-                    <option value="WAREHOUSEMANAGER">Warehouse Manager</option>
-                    <option value="CASHIER">Cashier</option>
                     <option value="ADMIN">Admin</option>
                   </select>
                   {errors.role && (

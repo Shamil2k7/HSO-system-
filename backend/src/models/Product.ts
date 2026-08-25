@@ -47,12 +47,6 @@ const ProductSchema = new Schema(
       enum: ['active', 'inactive'],
       default: 'active',
     },
-    mainStock: {
-      type: Number,
-      required: true,
-      default: 0,
-      min: 0,
-    },
   },
   {
     timestamps: true,

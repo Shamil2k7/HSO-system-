@@ -6,7 +6,7 @@ import { useEffect } from 'react';
 
 interface RoleGuardProps {
   children: React.ReactNode;
-  allowedRoles: ('ADMIN' | 'MANAGER' | 'SALESMAN' | 'SALESMANAGER' | 'WAREHOUSEMANAGER' | 'CASHIER')[];
+  allowedRoles: ('ADMIN' | 'MANAGER' | 'SALESMAN' | 'SALESMANAGER')[];
 }
 
 export default function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
@@ -19,9 +19,9 @@ export default function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
         router.push('/login');
       } else if (user.role !== 'ADMIN' && !allowedRoles.includes(user.role)) {
         // Admin overrides all roles. If non-admin is not allowed, redirect them.
-        if (user.role === 'MANAGER' || user.role === 'SALESMANAGER' || user.role === 'WAREHOUSEMANAGER') {
+        if (user.role === 'MANAGER' || user.role === 'SALESMANAGER') {
           router.push('/manager/dashboard');
-        } else if (user.role === 'SALESMAN' || user.role === 'CASHIER') {
+        } else if (user.role === 'SALESMAN') {
           router.push('/salesman/dashboard');
         } else {
           router.push('/login');

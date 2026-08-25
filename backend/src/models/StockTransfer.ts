@@ -20,7 +20,12 @@ const StockTransferSchema = new Schema(
     },
     from: {
       type: String,
-      default: 'Main Warehouse',
+      required: true,
+    },
+    fromSalesmanId: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
     },
     to: {
       type: String,
@@ -31,7 +36,7 @@ const StockTransferSchema = new Schema(
       ref: 'User',
       required: true,
     },
-    managerId: {
+    performedBy: {
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: true,

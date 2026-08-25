@@ -19,8 +19,8 @@ router.get('/', async (req, res) => {
 });
 
 // POST /api/products - Create product (Manager or Admin)
-router.post('/', authorizeRoles('MANAGER', 'ADMIN', 'WAREHOUSEMANAGER'), async (req: AuthRequest, res) => {
-  const { name, sku, category, unit, sellingPrice, minStockLevel, description, imageUrl, status, mainStock } = req.body;
+router.post('/', authorizeRoles('MANAGER', 'ADMIN'), async (req: AuthRequest, res) => {
+  const { name, sku, category, unit, sellingPrice, minStockLevel, description, imageUrl, status } = req.body;
   if (!name || !sku || !category || !unit || sellingPrice === undefined || minStockLevel === undefined) {
     return res.status(400).json({ message: 'All required fields must be supplied' });
   }
@@ -30,8 +30,6 @@ router.post('/', authorizeRoles('MANAGER', 'ADMIN', 'WAREHOUSEMANAGER'), async (
     if (existing) {
       return res.status(400).json({ message: 'A product with this SKU already exists' });
     }
-
-    const initialStock = mainStock !== undefined ? Number(mainStock) : 0;
 
     const product = await Product.create({
       name,
@@ -43,21 +41,7 @@ router.post('/', authorizeRoles('MANAGER', 'ADMIN', 'WAREHOUSEMANAGER'), async (
       description: description || '',
       imageUrl: imageUrl || '',
       status: status || 'active',
-      mainStock: initialStock,
     });
-
-    // Record stock movement if there is initial stock
-    if (initialStock > 0) {
-      await StockMovement.create({
-        productId: product._id,
-        type: 'INITIAL',
-        quantity: initialStock,
-        from: 'Supplier',
-        to: 'Main Warehouse',
-        performedBy: req.user!.id,
-        notes: 'Initial stock on creation',
-      });
-    }
 
     return res.status(201).json(product);
   } catch (error: any) {
@@ -66,7 +50,7 @@ router.post('/', authorizeRoles('MANAGER', 'ADMIN', 'WAREHOUSEMANAGER'), async (
 });
 
 // PUT /api/products/:id - Update product
-router.put('/:id', authorizeRoles('MANAGER', 'ADMIN', 'WAREHOUSEMANAGER'), async (req, res) => {
+router.put('/:id', authorizeRoles('MANAGER', 'ADMIN'), async (req, res) => {
   const { name, sku, category, unit, sellingPrice, minStockLevel, description, imageUrl, status } = req.body;
   try {
     const product = await Product.findById(req.params.id);
@@ -99,7 +83,7 @@ router.put('/:id', authorizeRoles('MANAGER', 'ADMIN', 'WAREHOUSEMANAGER'), async
 });
 
 // DELETE /api/products/:id - Delete product
-router.delete('/:id', authorizeRoles('MANAGER', 'ADMIN', 'WAREHOUSEMANAGER'), async (req, res) => {
+router.delete('/:id', authorizeRoles('MANAGER', 'ADMIN'), async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
     if (!product) {

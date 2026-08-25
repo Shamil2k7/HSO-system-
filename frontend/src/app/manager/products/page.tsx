@@ -28,7 +28,6 @@ const productSchema = z.object({
   description: z.string().optional().default(''),
   imageUrl: z.string().optional().default(''),
   status: z.enum(['active', 'inactive']).default('active'),
-  mainStock: z.coerce.number().min(0, 'Main warehouse stock must be positive').optional().default(0),
 });
 
 type ProductFormValues = z.infer<typeof productSchema>;
@@ -44,7 +43,6 @@ interface ProductData {
   description: string;
   imageUrl: string;
   status: 'active' | 'inactive';
-  mainStock: number;
 }
 
 export default function ManagerProducts() {
@@ -428,23 +426,7 @@ export default function ManagerProducts() {
                 </div>
               </div>
 
-              {/* Only show initial mainStock input during creation */}
-              {!editingProduct && (
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
-                    Initial Main Warehouse Stock
-                  </label>
-                  <input
-                    type="number"
-                    placeholder="500"
-                    {...register('mainStock')}
-                    className="mt-1 block w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                  {errors.mainStock && (
-                    <p className="mt-1 text-xs font-semibold text-rose-500">{errors.mainStock.message}</p>
-                  )}
-                </div>
-              )}
+
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">

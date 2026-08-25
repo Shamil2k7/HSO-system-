@@ -12,13 +12,18 @@ const router = Router();
 // Protect all stock transfer routes
 router.use(authenticateJWT);
 
-// GET /api/stock-transfers - Get transfer history (Admin/Manager only)
-router.get('/', authorizeRoles('MANAGER', 'ADMIN', 'WAREHOUSEMANAGER'), async (req, res) => {
+// GET /api/stock-transfers - Get transfer history
+router.get('/', authorizeRoles('MANAGER', 'ADMIN', 'SALESMAN', 'SALESMANAGER'), async (req: AuthRequest, res) => {
   try {
-    const transfers = await StockTransfer.find({})
+    const filter = req.user!.role === 'SALESMAN'
+      ? { $or: [{ fromSalesmanId: req.user!.id }, { toSalesmanId: req.user!.id }] }
+      : {};
+
+    const transfers = await StockTransfer.find(filter)
       .populate('productId', 'name sku category unit')
       .populate('toSalesmanId', 'name email')
-      .populate('managerId', 'name')
+      .populate('fromSalesmanId', 'name email')
+      .populate('performedBy', 'name')
       .sort({ createdAt: -1 });
 
     return res.json(transfers);
@@ -27,53 +32,74 @@ router.get('/', authorizeRoles('MANAGER', 'ADMIN', 'WAREHOUSEMANAGER'), async (r
   }
 });
 
-// POST /api/stock-transfers - Transfer stock to a salesman (Manager/Admin only)
-router.post('/', authorizeRoles('MANAGER', 'ADMIN', 'WAREHOUSEMANAGER'), async (req: AuthRequest, res) => {
-  const { salesmanId, productId, quantity } = req.body;
+// POST /api/stock-transfers - Transfer stock to another salesman
+router.post('/', authorizeRoles('MANAGER', 'ADMIN', 'SALESMAN', 'SALESMANAGER'), async (req: AuthRequest, res) => {
+  let { fromSalesmanId, toSalesmanId, productId, quantity } = req.body;
 
-  if (!salesmanId || !productId || quantity === undefined || quantity <= 0) {
-    return res.status(400).json({ message: 'Salesman ID, Product ID, and positive transfer quantity are required.' });
+  // If a salesman is logged in, they can only transfer from themselves
+  if (req.user!.role === 'SALESMAN') {
+    fromSalesmanId = req.user!.id;
+  }
+
+  if (!fromSalesmanId || !toSalesmanId || !productId || quantity === undefined || quantity <= 0) {
+    return res.status(400).json({ message: 'Source Salesman, Target Salesman, Product ID, and positive quantity are required.' });
+  }
+
+  if (fromSalesmanId === toSalesmanId) {
+    return res.status(400).json({ message: 'Source and Target Salesmen must be different.' });
   }
 
   const qty = Number(quantity);
 
   try {
-    // 1. Verify Salesman existence and role
-    const salesman = await User.findById(salesmanId);
-    if (!salesman || (salesman.role !== 'SALESMAN' && salesman.role !== 'CASHIER')) {
-      return res.status(400).json({ message: 'Invalid Salesman ID.' });
+    // 1. Verify existence of both users and roles
+    const fromSalesman = await User.findById(fromSalesmanId);
+    if (!fromSalesman || fromSalesman.role !== 'SALESMAN' || fromSalesman.status !== 'active') {
+      return res.status(400).json({ message: 'Invalid or inactive Source Salesman.' });
     }
 
-    // Run the operation within our database transaction helper
+    const toSalesman = await User.findById(toSalesmanId);
+    if (!toSalesman || toSalesman.role !== 'SALESMAN' || toSalesman.status !== 'active') {
+      return res.status(400).json({ message: 'Invalid or inactive Target Salesman.' });
+    }
+
+    // Run within database transaction
     const result = await withTransaction(async (session) => {
-      // 2. Load and verify product warehouse stock
+      // 2. Load product
       const product = await Product.findById(productId).session(session);
-      if (!product) {
-        throw new Error('Product not found.');
+      if (!product || product.status !== 'active') {
+        throw new Error('Product not found or inactive.');
       }
 
-      if (product.mainStock < qty) {
-        throw new Error(`Insufficient main stock. Available quantity: ${product.mainStock}`);
-      }
-
-      // 3. Deduct stock from Main Inventory
-      product.mainStock -= qty;
-      await product.save({ session });
-
-      // 4. Add/Update Salesman Personal Stock
-      let salesmanStock = await SalesmanStock.findOne({
-        salesmanId: salesman._id,
+      // 3. Load and verify source stock
+      const sourceStock = await SalesmanStock.findOne({
+        salesmanId: fromSalesman._id,
         productId: product._id,
       }).session(session);
 
-      if (salesmanStock) {
-        salesmanStock.quantity += qty;
-        await salesmanStock.save({ session });
+      if (!sourceStock || sourceStock.quantity < qty) {
+        const availableQty = sourceStock ? sourceStock.quantity : 0;
+        throw new Error(`Insufficient stock for ${fromSalesman.name}. Available: ${availableQty} ${product.unit}`);
+      }
+
+      // 4. Deduct stock from source salesman
+      sourceStock.quantity -= qty;
+      await sourceStock.save({ session });
+
+      // 5. Add stock to target salesman
+      let targetStock = await SalesmanStock.findOne({
+        salesmanId: toSalesman._id,
+        productId: product._id,
+      }).session(session);
+
+      if (targetStock) {
+        targetStock.quantity += qty;
+        await targetStock.save({ session });
       } else {
         await SalesmanStock.create(
           [
             {
-              salesmanId: salesman._id,
+              salesmanId: toSalesman._id,
               productId: product._id,
               quantity: qty,
             },
@@ -82,38 +108,48 @@ router.post('/', authorizeRoles('MANAGER', 'ADMIN', 'WAREHOUSEMANAGER'), async (
         );
       }
 
-      // 5. Generate Sequential Transfer ID
+      // 6. Generate sequential transfer ID
       const count = await StockTransfer.countDocuments({}).session(session);
       const transferId = `ST-${String(count + 1).padStart(4, '0')}`;
 
-      // 6. Record Stock Transfer Log
-      const transfer = await StockTransfer.create(
+      // 7. Record Stock Transfer Log
+      await StockTransfer.create(
         [
           {
             transferId,
             productId: product._id,
             quantity: qty,
-            from: 'Main Warehouse',
-            to: salesman.name,
-            toSalesmanId: salesman._id,
-            managerId: req.user!.id,
+            from: fromSalesman.name,
+            fromSalesmanId: fromSalesman._id,
+            to: toSalesman.name,
+            toSalesmanId: toSalesman._id,
+            performedBy: req.user!.id,
             status: 'completed',
           },
         ],
         { session }
       );
 
-      // 7. Record Stock Movement Log (negative for Main Warehouse deduction)
+      // 8. Record Stock Movement logs (deduction for sender, addition for receiver)
       await StockMovement.create(
         [
           {
             productId: product._id,
             type: 'TRANSFER',
             quantity: -qty,
-            from: 'Main Warehouse',
-            to: `Salesman: ${salesman.name}`,
+            from: `Salesman: ${fromSalesman.name}`,
+            to: `Salesman: ${toSalesman.name}`,
             performedBy: req.user!.id,
-            notes: `Transfer ${transferId} to Salesman`,
+            notes: `Transfer ${transferId} (outgoing)`,
+          },
+          {
+            productId: product._id,
+            type: 'TRANSFER',
+            quantity: qty,
+            from: `Salesman: ${fromSalesman.name}`,
+            to: `Salesman: ${toSalesman.name}`,
+            performedBy: req.user!.id,
+            notes: `Transfer ${transferId} (incoming)`,
           },
         ],
         { session }
@@ -123,8 +159,9 @@ router.post('/', authorizeRoles('MANAGER', 'ADMIN', 'WAREHOUSEMANAGER'), async (
         transferId,
         productName: product.name,
         qtyTransferred: qty,
-        salesmanName: salesman.name,
-        remainingMainStock: product.mainStock,
+        fromSalesmanName: fromSalesman.name,
+        toSalesmanName: toSalesman.name,
+        remainingSourceStock: sourceStock.quantity,
       };
     });
 
