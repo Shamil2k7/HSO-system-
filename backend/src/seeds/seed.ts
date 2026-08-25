@@ -11,14 +11,8 @@ dotenv.config();
 
 const MONGO_URI = process.env.MONGO_URI;
 
-async function seed() {
+export async function runSeed(): Promise<void> {
   try {
-    if (!MONGO_URI) {
-      throw new Error('MONGO_URI is not defined in environment variables.');
-    }
-    await mongoose.connect(MONGO_URI);
-    console.log('Connected to MongoDB for seeding.');
-
     // Clear existing collections
     await User.deleteMany({});
     await Product.deleteMany({});
@@ -321,6 +315,20 @@ async function seed() {
     });
 
     console.log('Seeded past sales with stock deductions.');
+  } catch (error) {
+    console.error('Seeding error:', error);
+    throw error;
+  }
+}
+
+async function seedStandalone() {
+  try {
+    if (!MONGO_URI) {
+      throw new Error('MONGO_URI is not defined in environment variables.');
+    }
+    await mongoose.connect(MONGO_URI);
+    console.log('Connected to MongoDB for seeding.');
+    await runSeed();
     console.log('Seeding completed successfully!');
     process.exit(0);
   } catch (error) {
@@ -329,4 +337,6 @@ async function seed() {
   }
 }
 
-seed();
+if (require.main === module) {
+  seedStandalone();
+}
