@@ -42,17 +42,12 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date() });
 });
 
-const startServer = async () => {
-  console.log(
-    'MONGO_URI:',
-    process.env.MONGO_URI?.replace(/\/\/([^:]+):([^@]+)@/, '//$1:****@')
-  );
+connectDB();
 
-  await connectDB();
-
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
   app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
   });
-};
+}
 
-startServer();
+export default app;
