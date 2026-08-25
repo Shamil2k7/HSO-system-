@@ -129,30 +129,19 @@ export default function LoginPage() {
         <div className="mt-6 rounded-xl border border-slate-700/50 bg-slate-900/40 p-4">
           <div className="flex items-center space-x-2 text-indigo-400 mb-3">
             <KeyRound className="h-4 w-4" />
-            <h3 className="text-xs font-bold uppercase tracking-wider">Demo User Accounts</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wider">Demo User Account</h3>
           </div>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="flex justify-center">
             <button
+              type="button"
               onClick={() => fillCredentials('9999999999')}
-              className="rounded-lg bg-slate-800/80 px-2 py-1.5 text-xs font-semibold text-slate-300 border border-slate-700 hover:border-indigo-500 hover:text-white transition-all text-center"
+              className="w-full rounded-lg bg-slate-800/80 px-4 py-2 text-xs font-semibold text-slate-300 border border-slate-700 hover:border-indigo-500 hover:text-white transition-all text-center"
             >
-              Admin
-            </button>
-            <button
-              onClick={() => fillCredentials('8888888888')}
-              className="rounded-lg bg-slate-800/80 px-2 py-1.5 text-xs font-semibold text-slate-300 border border-slate-700 hover:border-indigo-500 hover:text-white transition-all text-center"
-            >
-              CLC
-            </button>
-            <button
-              onClick={() => fillCredentials('7777777777')}
-              className="rounded-lg bg-slate-800/80 px-2 py-1.5 text-xs font-semibold text-slate-300 border border-slate-700 hover:border-indigo-500 hover:text-white transition-all text-center"
-            >
-              HOS
+              Auto-fill Admin Credentials
             </button>
           </div>
           <p className="mt-3 text-[10px] text-center text-slate-500">
-            Password: <code className="text-indigo-400 font-mono">password123</code> for all profiles
+            Default Password: <code className="text-indigo-400 font-mono">password123</code>
           </p>
         </div>
       </div>
