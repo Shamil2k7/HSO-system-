@@ -21,8 +21,18 @@ router.get('/', async (req, res) => {
 // POST /api/products - Create product (Manager or Admin)
 router.post('/', authorizeRoles('MANAGER', 'ADMIN'), async (req: AuthRequest, res) => {
   const { name, category, unit, sellingPrice, minStockLevel, description, imageUrl, status } = req.body;
-  if (!name || !category || !unit || sellingPrice === undefined || minStockLevel === undefined) {
-    return res.status(400).json({ message: 'All required fields must be supplied' });
+  
+  const missing = [];
+  if (!name) missing.push('name');
+  if (!category) missing.push('category');
+  if (!unit) missing.push('unit');
+  if (sellingPrice === undefined) missing.push('sellingPrice');
+  if (minStockLevel === undefined) missing.push('minStockLevel');
+
+  if (missing.length > 0) {
+    return res.status(400).json({ 
+      message: `All required fields must be supplied. Missing fields: ${missing.join(', ')}` 
+    });
   }
 
   try {
