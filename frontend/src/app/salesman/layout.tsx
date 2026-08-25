@@ -6,7 +6,7 @@ import DashboardLayout from '../../components/layout/DashboardLayout';
 
 export default function SalesmanLayout({ children }: { children: React.ReactNode }) {
   return (
-    <RoleGuard allowedRoles={['SALESMAN', 'CASHIER']}>
+    <RoleGuard allowedRoles={['SALESMAN']}>
       <DashboardLayout>{children}</DashboardLayout>
     </RoleGuard>
   );

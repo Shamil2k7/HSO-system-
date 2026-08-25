@@ -20,7 +20,6 @@ import {
 interface CompanyStockItem {
   productId: string;
   name: string;
-  sku: string;
   sellingPrice: number;
   quantity: number;
   unit: string;
@@ -312,7 +311,7 @@ export default function SalesmanAddSale() {
                   >
                     {stock.map((item) => (
                       <option key={item.productId} value={item.productId}>
-                        {item.name} (SKU: {item.sku} | ₹{item.sellingPrice})
+                        {item.name} (₹{item.sellingPrice})
                       </option>
                     ))}
                     {stock.length === 0 && <option value="">No assigned stock available</option>}

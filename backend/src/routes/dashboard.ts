@@ -177,7 +177,6 @@ router.get('/manager', authorizeRoles('MANAGER', 'ADMIN', 'SALESMANAGER'), async
         lowStockAlertList.push({
           _id: product._id,
           name: product.name,
-          sku: product.sku,
           mainStock: totalStock, // mapped to mainStock so frontend continues to display it
           minStockLevel: product.minStockLevel,
           unit: product.unit,

@@ -22,7 +22,7 @@ const userSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Please enter a valid email address'),
   role: z.enum(['ADMIN', 'MANAGER', 'SALESMAN', 'SALESMANAGER']),
-  status: z.enum(['active', 'inactive']).default('active'),
+  status: z.enum(['active', 'inactive']),
   password: z.string().optional().or(z.literal('')),
 });
 

@@ -82,7 +82,6 @@ async function seed() {
     // 2. Create Company Products (no mainStock)
     const shirt = await Product.create({
       name: 'ABC Shirt',
-      sku: 'SH-001',
       category: 'Shirt',
       unit: 'pcs',
       sellingPrice: 850,
@@ -93,7 +92,6 @@ async function seed() {
 
     const pant = await Product.create({
       name: 'ABC Pant',
-      sku: 'PA-001',
       category: 'Pant',
       unit: 'pcs',
       sellingPrice: 1200,
@@ -104,7 +102,6 @@ async function seed() {
 
     const tshirt = await Product.create({
       name: 'T-Shirt',
-      sku: 'TS-001',
       category: 'Shirt',
       unit: 'pcs',
       sellingPrice: 450,

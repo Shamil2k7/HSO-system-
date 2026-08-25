@@ -7,12 +7,7 @@ const ProductSchema = new Schema(
       required: true,
       trim: true,
     },
-    sku: {
-      type: String,
-      required: true,
-      unique: true,
-      trim: true,
-    },
+
     category: {
       type: String,
       required: true,

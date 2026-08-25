@@ -25,7 +25,6 @@ interface PersonalStockItem {
   _id: string;
   productId: string;
   name: string;
-  sku: string;
   quantity: number;
   unit: string;
 }
@@ -33,7 +32,7 @@ interface PersonalStockItem {
 interface TransferRecord {
   _id: string;
   transferId: string;
-  productId: { name: string; sku: string; unit: string } | null;
+  productId: { name: string; unit: string } | null;
   quantity: number;
   from: string;
   to: string;
@@ -199,7 +198,7 @@ export default function SalesmanStockTransfer() {
                 >
                   {personalStock.map((s) => (
                     <option key={s.productId} value={s.productId}>
-                      {s.name} (SKU: {s.sku} | In Hand: {s.quantity})
+                      {s.name} (In Hand: {s.quantity})
                     </option>
                   ))}
                   {personalStock.length === 0 && <option value="">No stock items in your inventory</option>}
@@ -276,7 +275,6 @@ export default function SalesmanStockTransfer() {
                         <div className="font-bold text-slate-800">
                           {t.productId ? t.productId.name : 'Unknown Product'}
                         </div>
-                        {t.productId && <div className="text-[10px] text-slate-400 font-normal">SKU: {t.productId.sku}</div>}
                       </td>
                       <td className="py-3.5 font-extrabold text-slate-900">
                         {t.quantity} {t.productId?.unit || 'pcs'}

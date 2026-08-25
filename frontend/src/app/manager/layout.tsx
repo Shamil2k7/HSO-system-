@@ -6,7 +6,7 @@ import DashboardLayout from '../../components/layout/DashboardLayout';
 
 export default function ManagerLayout({ children }: { children: React.ReactNode }) {
   return (
-    <RoleGuard allowedRoles={['MANAGER', 'SALESMANAGER', 'WAREHOUSEMANAGER']}>
+    <RoleGuard allowedRoles={['MANAGER', 'SALESMANAGER']}>
       <DashboardLayout>{children}</DashboardLayout>
     </RoleGuard>
   );

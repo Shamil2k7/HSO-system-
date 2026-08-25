@@ -20,20 +20,15 @@ router.get('/', async (req, res) => {
 
 // POST /api/products - Create product (Manager or Admin)
 router.post('/', authorizeRoles('MANAGER', 'ADMIN'), async (req: AuthRequest, res) => {
-  const { name, sku, category, unit, sellingPrice, minStockLevel, description, imageUrl, status } = req.body;
-  if (!name || !sku || !category || !unit || sellingPrice === undefined || minStockLevel === undefined) {
+  const { name, category, unit, sellingPrice, minStockLevel, description, imageUrl, status } = req.body;
+  if (!name || !category || !unit || sellingPrice === undefined || minStockLevel === undefined) {
     return res.status(400).json({ message: 'All required fields must be supplied' });
   }
 
   try {
-    const existing = await Product.findOne({ sku });
-    if (existing) {
-      return res.status(400).json({ message: 'A product with this SKU already exists' });
-    }
 
     const product = await Product.create({
       name,
-      sku,
       category,
       unit,
       sellingPrice: Number(sellingPrice),
@@ -51,19 +46,11 @@ router.post('/', authorizeRoles('MANAGER', 'ADMIN'), async (req: AuthRequest, re
 
 // PUT /api/products/:id - Update product
 router.put('/:id', authorizeRoles('MANAGER', 'ADMIN'), async (req, res) => {
-  const { name, sku, category, unit, sellingPrice, minStockLevel, description, imageUrl, status } = req.body;
+  const { name, category, unit, sellingPrice, minStockLevel, description, imageUrl, status } = req.body;
   try {
     const product = await Product.findById(req.params.id);
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
-    }
-
-    if (sku && sku !== product.sku) {
-      const existing = await Product.findOne({ sku });
-      if (existing) {
-        return res.status(400).json({ message: 'Product SKU already in use' });
-      }
-      product.sku = sku;
     }
 
     if (name) product.name = name;

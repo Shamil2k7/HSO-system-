@@ -254,7 +254,6 @@ router.get('/salesman/:id', async (req, res) => {
         companySalesList.push({
           productId: prod._id,
           name: prod.name,
-          sku: prod.sku,
           sellingPrice: prod.sellingPrice,
           unitsSold: productSalesMap[prodId],
           totalSalesValue: productSalesMap[prodId] * prod.sellingPrice,
