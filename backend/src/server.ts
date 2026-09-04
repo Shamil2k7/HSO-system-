@@ -33,6 +33,12 @@ app.use(
 
 app.use(express.json());
 
+app.get('/', (req, res) => {
+  res.json({
+    success: true,
+    message: 'HSO ERP Backend is running',
+  });
+});
 app.use('/api/auth', authRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/products', productsRouter);
