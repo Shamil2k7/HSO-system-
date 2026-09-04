@@ -48,10 +48,10 @@ app.get('/health', (req, res) => {
 
 connectDB();
 
-if (!process.env.VERCEL) {
-  app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-  });
-}
+// if (!process.env.VERCEL) {
+//   app.listen(PORT, () => {
+//     console.log(`Server is running on port ${PORT}`);
+//   });
+// }
 
 export default app;
