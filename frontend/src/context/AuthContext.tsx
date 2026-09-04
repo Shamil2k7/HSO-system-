@@ -86,7 +86,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       redirectToDashboard(userData.role);
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Login failed. Please check credentials.';
+      const message =
+        error.response?.data?.message ||
+        (!error.response
+          ? 'Unable to connect to backend server. Please make sure the backend is running.'
+          : 'Login failed. Please check credentials.');
       setLoading(false);
       throw new Error(message);
     }
