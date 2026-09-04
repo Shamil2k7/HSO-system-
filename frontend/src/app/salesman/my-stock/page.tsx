@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../../lib/api';
 import { useToast } from '../../../context/ToastContext';
-import { Boxes, Search, Loader2 } from 'lucide-react';
+import { Boxes, Search, Loader2, CircleDollarSign, Package } from 'lucide-react';
 
 interface StockItem {
   productId: string;
@@ -36,6 +36,9 @@ export default function SalesmanStock() {
     fetchMyStock();
   }, []);
 
+  const totalStockUnits = stock.reduce((sum, item) => sum + item.quantity, 0);
+  const totalStockValuation = stock.reduce((sum, item) => sum + item.quantity * item.sellingPrice, 0);
+
   const filteredStock = stock.filter((item) =>
     item.name.toLowerCase().includes(search.toLowerCase()) ||
     item.category.toLowerCase().includes(search.toLowerCase())
@@ -44,9 +47,47 @@ export default function SalesmanStock() {
   return (
     <div className="space-y-6">
       {/* Header Panel */}
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight text-slate-900">My Assigned Stock</h2>
-        <p className="text-sm text-slate-500">View products and inventory quantities currently allocated to your account</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900">My Assigned Stock</h2>
+          <p className="text-sm text-slate-500">View products and inventory quantities currently allocated to your account</p>
+        </div>
+      </div>
+
+      {/* Stock Summary KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm flex items-center justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Total Stock Price</p>
+            <h3 className="mt-1 text-2xl font-black text-slate-900">₹{totalStockValuation.toLocaleString()}</h3>
+            <p className="text-[11px] text-slate-400 mt-0.5">Total valuation of assigned stock</p>
+          </div>
+          <div className="rounded-xl bg-amber-50 p-3 text-amber-600">
+            <CircleDollarSign className="h-6 w-6" />
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm flex items-center justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Total Units in Hand</p>
+            <h3 className="mt-1 text-2xl font-black text-slate-900">{totalStockUnits.toLocaleString()} units</h3>
+            <p className="text-[11px] text-slate-400 mt-0.5">Combined quantity across all items</p>
+          </div>
+          <div className="rounded-xl bg-blue-50 p-3 text-blue-600">
+            <Boxes className="h-6 w-6" />
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm flex items-center justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Product Categories</p>
+            <h3 className="mt-1 text-2xl font-black text-slate-900">{stock.length} products</h3>
+            <p className="text-[11px] text-slate-400 mt-0.5">Active assigned product SKUs</p>
+          </div>
+          <div className="rounded-xl bg-indigo-50 p-3 text-indigo-600">
+            <Package className="h-6 w-6" />
+          </div>
+        </div>
       </div>
 
       {/* Filter and Search */}

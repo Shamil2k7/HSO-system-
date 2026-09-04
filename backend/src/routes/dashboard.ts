@@ -57,6 +57,10 @@ router.get('/salesman', authorizeRoles('SALESMAN'), async (req: AuthRequest, res
     // 2. Personal Stock Summary
     const stockItems = await SalesmanStock.find({ salesmanId }).populate('productId');
     const totalStockQty = stockItems.reduce((acc, item) => acc + item.quantity, 0);
+    const totalStockValue = stockItems.reduce((acc, item) => {
+      const price = (item.productId as any)?.sellingPrice || 0;
+      return acc + item.quantity * price;
+    }, 0);
 
     // 3. Recent Sales (last 5)
     const recentSales = await Sale.find({ salesmanId })
@@ -96,6 +100,7 @@ router.get('/salesman', authorizeRoles('SALESMAN'), async (req: AuthRequest, res
         weekSales,
         monthSales,
         totalStockQty,
+        totalStockValue,
         pendingAmount,
         completedAmount,
       },

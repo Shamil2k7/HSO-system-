@@ -11,6 +11,7 @@ import {
   PlusCircle,
   Clock,
   ArrowRight,
+  CircleDollarSign,
 } from 'lucide-react';
 import {
   BarChart,
@@ -29,6 +30,7 @@ interface DashboardData {
     weekSales: number;
     monthSales: number;
     totalStockQty: number;
+    totalStockValue?: number;
     pendingAmount: number;
     completedAmount: number;
   };
@@ -86,7 +88,7 @@ export default function SalesmanDashboard() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {/* Today's Sales */}
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between">
@@ -113,12 +115,33 @@ export default function SalesmanDashboard() {
           </div>
         </div>
 
+        {/* Total Price of Stock */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Total Price of Stock</p>
+              <h3 className="mt-2 text-2xl font-black text-slate-900">
+                ₹{(metrics.totalStockValue || 0).toLocaleString()}
+              </h3>
+              <p className="mt-1 text-xs text-slate-400 font-medium">
+                {metrics.totalStockQty} units in hand
+              </p>
+            </div>
+            <div className="rounded-lg bg-amber-50 p-3 text-amber-600">
+              <CircleDollarSign className="h-6 w-6" />
+            </div>
+          </div>
+        </div>
+
         {/* Assigned Stock Quantity */}
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-wider text-slate-500">My Assigned Stock</p>
               <h3 className="mt-2 text-2xl font-black text-slate-900">{metrics.totalStockQty} units</h3>
+              <Link href="/salesman/my-stock" className="mt-1 inline-block text-xs font-semibold text-indigo-600 hover:text-indigo-800">
+                View Stock &rarr;
+              </Link>
             </div>
             <div className="rounded-lg bg-blue-50 p-3 text-blue-600">
               <Boxes className="h-6 w-6" />

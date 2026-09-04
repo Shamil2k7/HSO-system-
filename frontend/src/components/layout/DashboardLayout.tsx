@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
+import SalesmanBottomNav from './SalesmanBottomNav';
 import {
   LayoutDashboard,
   Users,
@@ -239,9 +240,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </header>
 
         {/* Content Area */}
-        <main className="flex-1 overflow-y-auto px-4 py-8 md:px-8 max-w-[1600px] w-full mx-auto">
+        <main className={`flex-1 overflow-y-auto px-4 py-8 md:px-8 max-w-[1600px] w-full mx-auto ${user.role === 'SALESMAN' ? 'pb-24 lg:pb-8' : ''}`}>
           {children}
         </main>
+
+        {/* Mobile Bottom Navigation for Salesman */}
+        {user.role === 'SALESMAN' && <SalesmanBottomNav />}
       </div>
     </div>
   );
