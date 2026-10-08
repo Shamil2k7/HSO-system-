@@ -119,4 +119,97 @@ router.get('/salesman-stock', authorizeRoles('MANAGER', 'ADMIN', 'SALESMANAGER')
   }
 });
 
+// POST /api/inventory/clear-all-stock - Reset all stock to 0 across all salesmen (Manager/Admin only)
+router.post('/clear-all-stock', authorizeRoles('MANAGER', 'ADMIN', 'SALESMANAGER'), async (req: AuthRequest, res) => {
+  try {
+    // 1. Find all stock records with positive quantity to record movement logs
+    const activeStocks = await SalesmanStock.find({ quantity: { $gt: 0 } }).populate('salesmanId', 'name');
+
+    if (activeStocks.length > 0) {
+      const movements = activeStocks.map((s: any) => ({
+        productId: s.productId,
+        type: 'ADJUSTMENT',
+        quantity: -s.quantity,
+        from: s.salesmanId?.name ? `Salesman: ${s.salesmanId.name}` : 'Salesman Stock',
+        to: 'Cleared (Reset to 0)',
+        performedBy: req.user!.id,
+        notes: `Bulk inventory cleared to 0 by ${req.user!.name || 'manager/admin'}`,
+      }));
+      await StockMovement.insertMany(movements);
+    }
+
+    // 2. Set all stock records quantity to 0
+    const result = await SalesmanStock.updateMany({}, { $set: { quantity: 0 } });
+
+    return res.json({
+      message: 'All stock has been successfully cleared and reset to 0.',
+      clearedRecords: activeStocks.length,
+      modifiedCount: result.modifiedCount,
+    });
+  } catch (error: any) {
+    return res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// POST /api/inventory/clear-stock/:id - Clear specific stock item to 0 (Manager/Admin only)
+router.post('/clear-stock/:id', authorizeRoles('MANAGER', 'ADMIN', 'SALESMANAGER'), async (req: AuthRequest, res) => {
+  try {
+    const stockItem = await SalesmanStock.findById(req.params.id).populate('salesmanId', 'name');
+    if (!stockItem) {
+      return res.status(404).json({ message: 'Stock record not found' });
+    }
+
+    const prevQty = stockItem.quantity;
+    if (prevQty > 0) {
+      await StockMovement.create({
+        productId: stockItem.productId,
+        type: 'ADJUSTMENT',
+        quantity: -prevQty,
+        from: (stockItem.salesmanId as any)?.name ? `Salesman: ${(stockItem.salesmanId as any).name}` : 'Salesman Stock',
+        to: 'Cleared (Reset to 0)',
+        performedBy: req.user!.id,
+        notes: `Individual stock record cleared from ${prevQty} to 0 by ${req.user!.name || 'manager/admin'}`,
+      });
+      stockItem.quantity = 0;
+      await stockItem.save();
+    }
+
+    return res.json({
+      message: 'Stock record reset to 0 successfully',
+      stock: stockItem,
+    });
+  } catch (error: any) {
+    return res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// POST /api/inventory/clear-my-stock - Salesman clears all their own personal stock to 0
+router.post('/clear-my-stock', authorizeRoles('SALESMAN'), async (req: AuthRequest, res) => {
+  try {
+    const salesmanId = req.user!.id;
+    const myStocks = await SalesmanStock.find({ salesmanId, quantity: { $gt: 0 } });
+
+    if (myStocks.length > 0) {
+      const movements = myStocks.map((s: any) => ({
+        productId: s.productId,
+        type: 'ADJUSTMENT',
+        quantity: -s.quantity,
+        from: `Salesman: ${req.user!.name}`,
+        to: 'Cleared (Reset to 0)',
+        performedBy: req.user!.id,
+        notes: `Personal stock cleared to 0 by ${req.user!.name}`,
+      }));
+      await StockMovement.insertMany(movements);
+      await SalesmanStock.updateMany({ salesmanId }, { $set: { quantity: 0 } });
+    }
+
+    return res.json({
+      message: 'Your personal stock has been reset to 0.',
+      clearedRecords: myStocks.length,
+    });
+  } catch (error: any) {
+    return res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 export default router;

@@ -12,6 +12,7 @@ import {
   Loader2,
   AlertTriangle,
   FileSpreadsheet,
+  Trash2,
 } from 'lucide-react';
 
 interface SalesmanStockData {
@@ -34,6 +35,9 @@ export default function ManagerInventory() {
   const [quantity, setQuantity] = useState('');
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [clearModalOpen, setClearModalOpen] = useState(false);
+  const [clearingAll, setClearingAll] = useState(false);
+  const [clearingItemId, setClearingItemId] = useState<string | null>(null);
 
   const loadData = async () => {
     try {
@@ -112,6 +116,38 @@ export default function ManagerInventory() {
     }
   };
 
+  const handleClearAllStock = async () => {
+    setClearingAll(true);
+    try {
+      const res = await api.post('/inventory/clear-all-stock');
+      showToast(res.data.message || 'All stock has been reset to 0.', 'success');
+      setClearModalOpen(false);
+      setLoading(true);
+      await loadData();
+    } catch (error: any) {
+      showToast(error.response?.data?.message || 'Failed to clear stock.', 'error');
+    } finally {
+      setClearingAll(false);
+    }
+  };
+
+  const handleClearItemStock = async (stockId: string, productName?: string, salesmanName?: string) => {
+    if (!confirm(`Are you sure you want to reset stock for "${productName || 'this product'}" (${salesmanName || 'HOS'}) to 0?`)) {
+      return;
+    }
+    setClearingItemId(stockId);
+    try {
+      const res = await api.post(`/inventory/clear-stock/${stockId}`);
+      showToast(res.data.message || 'Stock reset to 0 successfully.', 'success');
+      setLoading(true);
+      await loadData();
+    } catch (error: any) {
+      showToast(error.response?.data?.message || 'Failed to reset stock.', 'error');
+    } finally {
+      setClearingItemId(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header Panel */}
@@ -120,12 +156,22 @@ export default function ManagerInventory() {
           <h2 className="text-2xl font-bold tracking-tight text-slate-900">HOS Inventory</h2>
           <p className="text-sm text-slate-500">Track and replenish stock assigned directly to HOS (salesman) personal allocation</p>
         </div>
-        <button
-          onClick={() => openAddStockModal('', '')}
-          className="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-500 shadow-md shadow-indigo-600/20 transition-all"
-        >
-          <Plus className="mr-1.5 h-5 w-5" /> Replenish HOS Stock
-        </button>
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            onClick={() => setClearModalOpen(true)}
+            disabled={clearingAll || stock.length === 0 || stock.every((s) => s.quantity === 0)}
+            className="inline-flex items-center justify-center rounded-xl bg-rose-50 border border-rose-200 px-4 py-2.5 text-sm font-bold text-rose-700 hover:bg-rose-100 disabled:opacity-40 disabled:cursor-not-allowed shadow-sm transition-all"
+            title="Set all allocated stock quantities to 0"
+          >
+            <Trash2 className="mr-1.5 h-4 w-4" /> Clear All Stock
+          </button>
+          <button
+            onClick={() => openAddStockModal('', '')}
+            className="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-500 shadow-md shadow-indigo-600/20 transition-all"
+          >
+            <Plus className="mr-1.5 h-5 w-5" /> Replenish HOS Stock
+          </button>
+        </div>
       </div>
 
       {/* Main Stock Summary Grid */}
@@ -191,12 +237,27 @@ export default function ManagerInventory() {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-center">
-                        <button
-                          onClick={() => openAddStockModal(s.salesmanId?._id, s.productId?._id)}
-                          className="inline-flex items-center text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 border border-indigo-100 hover:bg-indigo-100 rounded-lg px-2.5 py-1.5 transition-all"
-                        >
-                          <Plus className="mr-1 h-3 w-3" /> Replenish
-                        </button>
+                        <div className="flex items-center justify-center space-x-2">
+                          <button
+                            onClick={() => openAddStockModal(s.salesmanId?._id, s.productId?._id)}
+                            className="inline-flex items-center text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 border border-indigo-100 hover:bg-indigo-100 rounded-lg px-2.5 py-1.5 transition-all"
+                          >
+                            <Plus className="mr-1 h-3 w-3" /> Replenish
+                          </button>
+                          <button
+                            onClick={() => handleClearItemStock(s._id, s.productId?.name, s.salesmanId?.name)}
+                            disabled={s.quantity === 0 || clearingItemId === s._id}
+                            title="Reset this stock balance to 0"
+                            className="inline-flex items-center text-xs font-bold text-rose-600 hover:text-rose-800 bg-rose-50 border border-rose-100 hover:bg-rose-100 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg px-2.5 py-1.5 transition-all"
+                          >
+                            {clearingItemId === s._id ? (
+                              <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                            ) : (
+                              <Trash2 className="mr-1 h-3 w-3" />
+                            )}
+                            Clear
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -311,6 +372,48 @@ export default function ManagerInventory() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Clear All Stock Confirmation Modal */}
+      {clearModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-slate-200">
+            <div className="flex items-start space-x-3 text-rose-600">
+              <div className="rounded-xl bg-rose-50 p-2.5 shrink-0 border border-rose-100">
+                <AlertTriangle className="h-6 w-6 text-rose-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">Clear All Stock?</h3>
+                <p className="mt-1.5 text-sm text-slate-600">
+                  Are you sure you want to clear all stock? This will set <strong>all allocated stock quantities to 0</strong> for every HOS user in the system.
+                </p>
+                <p className="mt-2 text-xs text-rose-600 font-medium">
+                  This action cannot be undone. All stock balances will immediately drop to 0 units.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end space-x-3 pt-5 mt-5 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setClearModalOpen(false)}
+                disabled={clearingAll}
+                className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleClearAllStock}
+                disabled={clearingAll}
+                className="inline-flex items-center justify-center rounded-xl bg-rose-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-rose-500 shadow-md shadow-rose-600/20 disabled:opacity-50 transition-all"
+              >
+                {clearingAll && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Yes, Set All to 0
+              </button>
+            </div>
           </div>
         </div>
       )}

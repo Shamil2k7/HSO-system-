@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../../lib/api';
 import { useToast } from '../../../context/ToastContext';
-import { Boxes, Search, Loader2, CircleDollarSign, Package } from 'lucide-react';
+import { Boxes, Search, Loader2, CircleDollarSign, Package, Trash2, AlertTriangle } from 'lucide-react';
 
 interface StockItem {
   productId: string;
@@ -20,6 +20,8 @@ export default function SalesmanStock() {
   const [stock, setStock] = useState<StockItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [clearModalOpen, setClearModalOpen] = useState(false);
+  const [clearing, setClearing] = useState(false);
 
   const fetchMyStock = async () => {
     try {
@@ -35,6 +37,21 @@ export default function SalesmanStock() {
   useEffect(() => {
     fetchMyStock();
   }, []);
+
+  const handleClearMyStock = async () => {
+    setClearing(true);
+    try {
+      const res = await api.post('/inventory/clear-my-stock');
+      showToast(res.data.message || 'Personal stock reset to 0.', 'success');
+      setClearModalOpen(false);
+      setLoading(true);
+      await fetchMyStock();
+    } catch (error: any) {
+      showToast(error.response?.data?.message || 'Failed to clear stock.', 'error');
+    } finally {
+      setClearing(false);
+    }
+  };
 
   const totalStockUnits = stock.reduce((sum, item) => sum + item.quantity, 0);
   const totalStockValuation = stock.reduce((sum, item) => sum + item.quantity * item.sellingPrice, 0);
@@ -52,6 +69,14 @@ export default function SalesmanStock() {
           <h2 className="text-2xl font-bold tracking-tight text-slate-900">My Assigned Stock</h2>
           <p className="text-sm text-slate-500">View products and inventory quantities currently allocated to your account</p>
         </div>
+        <button
+          onClick={() => setClearModalOpen(true)}
+          disabled={clearing || stock.length === 0 || totalStockUnits === 0}
+          className="inline-flex items-center justify-center rounded-xl bg-rose-50 border border-rose-200 px-4 py-2.5 text-sm font-bold text-rose-700 hover:bg-rose-100 disabled:opacity-40 disabled:cursor-not-allowed shadow-sm transition-all"
+          title="Reset all my stock balances to 0"
+        >
+          <Trash2 className="mr-1.5 h-4 w-4" /> Clear All Stock
+        </button>
       </div>
 
       {/* Stock Summary KPI Cards */}
@@ -149,6 +174,48 @@ export default function SalesmanStock() {
           </div>
         )}
       </div>
+
+      {/* Clear All Stock Confirmation Modal */}
+      {clearModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-slate-200">
+            <div className="flex items-start space-x-3 text-rose-600">
+              <div className="rounded-xl bg-rose-50 p-2.5 shrink-0 border border-rose-100">
+                <AlertTriangle className="h-6 w-6 text-rose-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">Clear All Stock?</h3>
+                <p className="mt-1.5 text-sm text-slate-600">
+                  Are you sure you want to clear your assigned stock? This will set <strong>all your product quantities to 0</strong>.
+                </p>
+                <p className="mt-2 text-xs text-rose-600 font-medium">
+                  This action cannot be undone. All assigned balance will reset to 0.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end space-x-3 pt-5 mt-5 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setClearModalOpen(false)}
+                disabled={clearing}
+                className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleClearMyStock}
+                disabled={clearing}
+                className="inline-flex items-center justify-center rounded-xl bg-rose-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-rose-500 shadow-md shadow-rose-600/20 disabled:opacity-50 transition-all"
+              >
+                {clearing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Yes, Set All to 0
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
